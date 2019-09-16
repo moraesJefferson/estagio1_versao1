@@ -2,36 +2,31 @@
 -- Description: allow the player to play the game
 
 local composer = require( "composer" )
-
 local scene = composer.newScene()
+
 
 local widget = require "widget"
 widget.setTheme( "widget_theme_android_holo_light" )
 
 local physics = require "physics"
 physics.start()
-physics.setGravity(0,0)
+physics.setGravity(0,30)
+physics.setDrawMode( "normal" )
 
 
-local playerSheetData = {width=100, height=74, numFrames=9, sheetContentWidth=900, sheetContentHeight=74}
-local playerSheet = graphics.newImageSheet("image/spriteSheet/arqueiro.png", playerSheetData)
+local playerSheetData = {width=100, height=74, numFrames=13, sheetContentWidth=1300, sheetContentHeight=74}
+local playerSheet = graphics.newImageSheet("image/spriteSheet/naoki_sprite2.png", playerSheetData)
 local playerSequenceData = {
-    {name="shooting", start=1, count=9, time=1000, loopCount=0, loopDirection = "foward"}
+    {name="shooting", start=1, count=9, time=700, loopCount=1},
+    {name="stop", start=10, count=4, time=1000, loopCount=0}
 }
 
-local sheetOptionsStop = { width = 100, height = 74, numFrames = 4, sheetContentWidth=400, sheetContentHeight=74 }
-
-local sheetStop = graphics.newImageSheet( "image/spriteSheet/parado.png", sheetOptionsStop )
-
-local sequenceStop = {
-    {
-        name = "normalStop",
-        start = 1,
-        count = 4,
-        time = 1000,
-        loopCount = 0,
-        loopDirection = "forward"
-    }
+local orcSheetData = {width=84, height=81, numFrames=7, sheetContentWidth=588, sheetContentHeight=81}
+local orcSheet1 = graphics.newImageSheet("image/spriteSheet/orc1_attack.png", orcSheetData)
+--local pirateSheet2 = graphics.newImageSheet("images/characters/pirate2.png", pirateSheetData)
+--local pirateSheet3 = graphics.newImageSheet("images/characters/pirate3.png", pirateSheetData)
+local orcSequenceData = {
+    {name="attack", start=1, count=7, time=575, loopCount=0}
 }
  
 -- -----------------------------------------------------------------------------------------------------------------
@@ -39,7 +34,37 @@ local sequenceStop = {
 -- -----------------------------------------------------------------------------------------------------------------
 
 -- local forward references should go here
+
+-- Create display group for predicted trajectory
+local evento
+local teste
+local line
+local predictedPath = display.newGroup()
+predictedPath.alpha = 0.2
+
+local intialForceMultiplier = 2 --MOD
+local perFrameDelta = 1.005  --MOD
+local forceMultiplier = intialForceMultiplier  --MOD
+local lastEvent  --MOD
+
+-- Create function forward references
+local getTrajectoryPoint
+local launchProjectile
+
+local lane = {}
+
 local player, waiting
+local enemy = {} -- table to hold enemy objects
+local enemyCounter = 0 -- number of enemies sent
+local enemySendSpeed = 500 -- how often to send the enemies
+local enemyTravelSpeed = 10000 -- how fast enemies travel across the scree
+local enemyIncrementSpeed = 1.5 -- how much to increase the enemy speed
+local enemyMaxSendSpeed = 25 -- max send speed, if this is not set, the enemies could just be one big flood 
+
+local poof = {}
+local poofCounter = 0
+
+local timeCounter = 0 -- how much time has passed in the game
 local pauseGame = false -- is the game paused?
 local pauseBackground, btn_pause, pauseText, pause_returnToMenu, pauseReminder -- forward declares
 
@@ -49,6 +74,7 @@ local bulletTransition = {} -- table to hold bullet transitions
 local bulletTransitionCounter = 0 -- number of bullet transitions made
 
 local onGameOver, gameOverBox, gameoverBackground, btn_returnToMenu -- forward declare
+
 -- -------------------------------------------------------------------------------
 
 
@@ -56,6 +82,7 @@ local onGameOver, gameOverBox, gameoverBackground, btn_returnToMenu -- forward d
 function scene:create( event )
 
     local sceneGroup = self.view
+
 
     -- Initialize the scene here.
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
@@ -67,70 +94,228 @@ function scene:create( event )
     end
 
     local function stop()
-        player.isVisible = false;
-        waiting.isVisible = true;
-        waiting:setSequence( "normalStop" )
-        waiting:play()  
+        player:setSequence("stop")
+        player:play() 
     end
 
-    local function shoot()
-        bulletCounter = bulletCounter + 1
-            bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
-            bullets[bulletCounter].x = player.x - (player.width * 0.5)
-            bullets[bulletCounter].y = player.y
-            bullets[bulletCounter].id = "bullet"
-            physics.addBody(bullets[bulletCounter])
-            bullets[bulletCounter].isSensor = true 
+    local function sendEnemies()
+        -- timeCounter : keeps track of the time in the game, starts at 0
+        -- enemySendSpeed : will tell us how often to send the enemies, starts at 75
+        -- enemyCounter : keeps track of the number of enemies on the screen, starts at 0
+        -- enemyIncrementSpeed : how much to increase the enemy speed, starts at 1.5
+        -- enemyMaxSendSpeed : limit the send speed to 20, starts at 20
 
-            bulletTransition[bulletCounter] = transition.to(bullets[bulletCounter], {x=-250, time=2000, onComplete=function(self)
-            if(self~=nil) then 
-                display.remove(self)
+        -- In math terms, Modulo (%) will return the remainder of a division. 10%2=0, 11%2=1, 14%5=4, 19%8=3
+        timeCounter = timeCounter + 1
+        if((timeCounter%enemySendSpeed) == 0) then 
+            enemyCounter = enemyCounter + 1
+            enemySendSpeed = enemySendSpeed - enemyIncrementSpeed
+            if(enemySendSpeed <= enemyMaxSendSpeed) then 
+                enemySendSpeed = enemyMaxSendSpeed
             end
-            end})
 
-            player:setSequence("shooting")
-            player:play()
-            audio.play(_THROW)
-            stop()
-    end
+            --local temp = math.random(1,3)
+            --if(temp == 1) then 
+                enemy[enemyCounter] = display.newSprite(orcSheet1, orcSequenceData)
+            --elseif(temp == 2) then 
+               --- enemy[enemyCounter] = display.newSprite(pirateSheet2, pirateSequenceData)
+            --else 
+               -- enemy[enemyCounter] = display.newSprite(pirateSheet3, pirateSequenceData)
+            --end
 
-    local function playerShoot( event )
-        if(event.phase == "began") then
-            waiting.isVisible = false;
-            player.isVisible = true;
-            timer.performWithDelay(700, shoot)
+            enemy[enemyCounter].x = _L - 50
+            enemy[enemyCounter].y = lane[1].y
+            enemy[enemyCounter].id = "enemy"
+            enemy[enemyCounter].xScale = 1.5
+            enemy[enemyCounter].yScale = 1.5
+            physics.addBody(enemy[enemyCounter],'static')
+            enemy[enemyCounter].isFixedRotation = true 
+            sceneGroup:insert(enemy[enemyCounter])            
+
+            transition.to(enemy[enemyCounter], {x=_R+50, time=enemyTravelSpeed, onComplete=function(self) 
+                    if(self~=nil) then display.remove(self); end 
+                end})
+
+            enemy[enemyCounter]:setSequence("attack")
+            enemy[enemyCounter]:play()
         end
     end
 
-    local background = display.newImageRect(sceneGroup, "image/cenarios/cena1.png", 1425, 925)
+    local background = display.newImageRect(sceneGroup, "image/cenarios/cena1.png", 1920, 1080)
         background.x = _CX
         background.y = _CY
 
-    local castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 600, 400)
+    for i=1,1 do 
+        lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 1490, 100)
+        lane[i].x = _CX * 0.775
+        if(i==1) then
+            lane[i].y = _B * 0.884
+       -- else
+           -- lane[i].y = _B - 150
+        end
+        lane[i].id = i
+    end 
+    
+    local castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
         castelo.x = _R * 0.9
-        castelo.y = _B * 0.7
+        castelo.y = _B * 0.65
 
     player = display.newSprite(playerSheet, playerSequenceData)
           
-    player.x = _CX / 0.625
-    player.y = _CY / 0.75
+    player.x = _CX / 0.67
+    player.y = _CY / 0.8
+    player.force = 0
     player.id = "player_shoot"
+    player.xScale = 1.5
+    player.yScale = 1.5
     sceneGroup:insert(player)
-    physics.addBody(player)
+    physics.addBody(player,'static')
+    player:setSequence("stop")
     player:play()
-    player.isVisible = false;
+    player.isVisible = true;
 
 
-    waiting = display.newSprite( sheetStop, sequenceStop )
+    getTrajectoryPoint = function( startingPosition, startingVelocity, n )
+ 
+        -- Velocity and gravity are given per second but we want time step values
+        local t = 1/display.fps  -- Seconds per time step at 60 frames-per-second (default)
+        local stepVelocity = { x=t*startingVelocity.x, y=t*startingVelocity.y }
+        local gx, gy = physics.getGravity()
+        local stepGravity = { x=t*0, y=t*gy }
+        return {
+            x = startingPosition.x  + n * stepVelocity.x + 0.25 * (n*n+n) * stepGravity.x,
+            y = startingPosition.y + n * stepVelocity.y + 0.25 * (n*n+n) * stepGravity.y
+        }
+    end
 
-    waiting.x = _CX / 0.625
-    waiting.y = _CY / 0.75
-    waiting.id = "player_stop"
-    sceneGroup:insert(waiting)
-    waiting:play()
-    waiting.isVisible = true;
+    local function updatePrediction(event)
+        lastEvent = event
 
-    waiting:addEventListener("touch", playerShoot)
+        display.remove( predictedPath )
+        predictedPath = display.newGroup()
+        predictedPath.alpha = 0.2
+ 
+        local startingVelocity = { x=event.x-event.xStart, y=event.y-event.yStart }
+
+        startingVelocity.x = startingVelocity.x * forceMultiplier --MOD
+        startingVelocity.y = startingVelocity.y * forceMultiplier --MOD
+
+        for i = 1,240,2 do
+            local s = { x=event.xStart, y=event.yStart }
+            local trajectoryPosition = getTrajectoryPoint( s, startingVelocity, i )
+            --local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 4 )
+        end
+    end
+
+    local function onCollision(event)
+
+        local function removeOnEnemyHit(obj1, obj2)
+            display.remove(obj1)
+            display.remove(obj2)
+            --if(obj1.id == "enemy") then 
+               -- enemyHit(event.object1.x, event.object1.y)
+            --else
+               -- enemyHit(event.object2.x, event.object2.y)
+            --end
+        end
+
+        local function showPlayerHit()
+            player:setSequence("hurt")
+            player:play()
+            player.alpha = 0.5
+            local tmr_onPlayerHit = timer.performWithDelay(100, playerHit, 1)
+        end
+
+        local function removeOnPlayerHit(obj1, obj2)
+            if(obj1 ~= nil and obj1.id == "enemy") then 
+                display.remove(obj1)
+            end
+            if(obj2 ~= nil and obj2.id == "enemy") then 
+                display.remove(obj2)
+            end
+        end
+
+        if( (event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")  ) then 
+            removeOnEnemyHit(event.object1, event.object2)
+        elseif(event.object1.id == "enemy" and event.object2.id == "player") then 
+            --showPlayerHit()
+            removeOnPlayerHit(event.object1, nil)
+        elseif(event.object1.id == "player" and event.object2.id == "enemy") then 
+            --showPlayerHit()
+            removeOnPlayerHit(nil, event.object2)
+        end
+
+    end
+
+    local function shoot(event)
+        audio.play(_THROW)
+
+        bulletCounter = bulletCounter + 1
+        bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
+        bullets[bulletCounter].x = player.x  
+        if(event.yStart < 676 or event.yStart > 708 ) then
+            bullets[bulletCounter].y = 676
+        else
+            bullets[bulletCounter].y = event.yStart
+        end
+        bullets[bulletCounter].id = "bullet"
+        physics.addBody(bullets[bulletCounter],{density = 1.0, bounce = 0.2, radius=4})
+        bullets[bulletCounter].isSensor = true
+        local vx, vy = (event.x-event.xStart)*-1, (event.y-event.yStart)*-1
+        local atanVal = math.atan2(event.y - event.xStart,event.x - event.yStart)
+        --bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi) 
+        bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
+        
+        if(self~=nil) then 
+            display.remove(self)
+        end
+
+    end
+
+    
+    local function enterFrame( )
+        forceMultiplier = forceMultiplier * perFrameDelta
+        if( lastEvent ) then
+            updatePrediction(lastEvent)
+        end
+    end
+
+    local function playerShoot( event )
+        evento = event
+            local eventX, eventY = event.x, event.y
+                if ( event.phase == "began" ) then
+                    forceMultiplier = intialForceMultiplier --MOD
+                    Runtime:addEventListener( "enterFrame", enterFrame ) --MOD
+                    line = display.newLine( eventX, eventY, eventX, eventY )
+                    line.strokeWidth = 4 ; line.alpha = 0.6  --MOD
+                elseif(event.phase == "moved") then
+                    display.remove( line )
+                    line = display.newLine( event.xStart, event.yStart, eventX, eventY )
+                    line.strokeWidth = 4 ; line.alpha = 0.6 --MOD
+                    updatePrediction( event ) 
+                else 
+                    display.remove( line )
+                    updatePrediction( event )
+                    player:setSequence("shooting")
+                    player:play()
+                    Runtime:removeEventListener( "enterFrame", enterFrame )   
+                end
+        return true
+    end
+    
+    local function spriteListener( event )
+        if(event.phase == "ended" and event.target.sequence == "shooting" ) then
+            stop()
+        elseif (player.frame == 8 and event.target.sequence == "shooting" ) then
+            shoot(evento)
+        end  
+    end
+
+    -- Add sprite listener
+    player:addEventListener( "sprite", spriteListener )
+    Runtime:addEventListener("touch", playerShoot)
+    Runtime:addEventListener("enterFrame", sendEnemies)
+    Runtime:addEventListener( "collision", onCollision )
 end
 
 

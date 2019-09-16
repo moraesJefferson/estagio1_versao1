@@ -58,45 +58,44 @@ function scene:create( event )
 
     -- Initialize the scene here.
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
-    local background = display.newImageRect(sceneGroup, "image/menu/menu2.png", 1425, 930)
+    local background = display.newImageRect(sceneGroup, "image/menu/menu2.png", 1920 , 1080)
         background.x = _CX; background.y = _CY;
 
    -- local gameTitle = display.newImageRect(sceneGroup, "image/menu/title.png", 508, 210)
        -- gameTitle.x = _CX; gameTitle.y = _CH * 0.2
 
     local naoki = display.newImageRect(sceneGroup, "image/menu/naoki.png", 140, 100)
-        naoki.x = _L - naoki.width; naoki.y = _CH * 0.925;
+        naoki.x = _L - naoki.width; naoki.y = _CH * 0.87;
+        naoki.xScale = 1.2
+        naoki.yScale = 1.2
 
-    local orc = display.newImageRect(sceneGroup, "image/menu/orc.png", 80, 100)
-        orc.x = _R + orc.width; orc.y = _CH * 0.925;
+    local orc = display.newImageRect(sceneGroup, "image/menu/orc1.png", 90, 100)
+        orc.x = _R + orc.width; orc.y = _CH * 0.87;
+        orc.xScale = 1.2
+        orc.yScale = 1.2
 
-    local cannon = display.newImageRect(sceneGroup, "image/menu/cannon.png", 100, 70)
-        cannon.x = _R + cannon.width; cannon.y = _CH * 0.945;
-
-    --local torre = display.newImageRect(sceneGroup,"image/menu/torre.png",150,600)
-    --torre.x = _R * 0.925; torre.y = _CY * 1.25;
 
     -- Create some buttons
     btn_play = widget.newButton {
-        width = 200,
-        height = 55,
+        width = 300,
+        height = 80,
         defaultFile = "image/menu/start.png",
         overFile = "image/menu/start.png",
         onEvent = onPlayTouch
     }
     btn_play.x = _R * 0.75
-    btn_play.y = _B * 0.75
+    btn_play.y = _B * 0.7
     sceneGroup:insert(btn_play)
 
     btn_exit = widget.newButton {
-        width = 200,
-        height = 50,
+        width = 300,
+        height = 70,
         defaultFile = "image/menu/exit.png",
         overFile = "image/menu/exit.png",
         onEvent = onExitTouch
     }
     btn_exit.x = _R * 0.75
-    btn_exit.y = _B * 0.85
+    btn_exit.y = _B * 0.8
     sceneGroup:insert(btn_exit)
 
     btn_sounds = widget.newButton {
@@ -112,8 +111,7 @@ function scene:create( event )
 
     -- Transitions
     moveNaoki = transition.to(naoki, {x=_CX, delay=250})
-    moveOrc = transition.to(orc, {x=55, delay=250})
-    moveCannon = transition.to(cannon, {x=150, delay=250})
+    moveOrc = transition.to(orc, {x=_CX - 600, delay=250})
 
 end
 

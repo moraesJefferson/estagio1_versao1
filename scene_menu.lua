@@ -60,19 +60,23 @@ function scene:create( event )
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
     local background = display.newImageRect(sceneGroup, "image/menu/menu2.png", 1920 , 1080)
         background.x = _CX; background.y = _CY;
+        background.xScale = 2
+        background.yScale = 2
 
    -- local gameTitle = display.newImageRect(sceneGroup, "image/menu/title.png", 508, 210)
        -- gameTitle.x = _CX; gameTitle.y = _CH * 0.2
 
     local naoki = display.newImageRect(sceneGroup, "image/menu/naoki.png", 140, 100)
-        naoki.x = _L - naoki.width; naoki.y = _CH * 0.87;
-        naoki.xScale = 1.2
-        naoki.yScale = 1.2
+        naoki.x = _L - naoki.width; 
+        naoki.y = _CH * 0.935;
+        naoki.xScale = 1.8
+        naoki.yScale = 1.8
 
     local orc = display.newImageRect(sceneGroup, "image/menu/orc1.png", 90, 100)
-        orc.x = _R + orc.width; orc.y = _CH * 0.87;
-        orc.xScale = 1.2
-        orc.yScale = 1.2
+        orc.x = _R + orc.width; 
+        orc.y = _CH * 0.93;
+        orc.xScale = 2
+        orc.yScale = 2
 
 
     -- Create some buttons
@@ -85,6 +89,8 @@ function scene:create( event )
     }
     btn_play.x = _R * 0.75
     btn_play.y = _B * 0.7
+    btn_play.xScale = 1.5
+    btn_play.yScale = 1.5
     sceneGroup:insert(btn_play)
 
     btn_exit = widget.newButton {
@@ -96,6 +102,8 @@ function scene:create( event )
     }
     btn_exit.x = _R * 0.75
     btn_exit.y = _B * 0.8
+    btn_exit.xScale = 1.5
+    btn_exit.yScale = 1.5
     sceneGroup:insert(btn_exit)
 
     btn_sounds = widget.newButton {
@@ -107,11 +115,13 @@ function scene:create( event )
     }
     btn_sounds.x = _R * 0.95
     btn_sounds.y = _B * 0.075
+    btn_sounds.xScale = 1.5
+    btn_sounds.yScale = 1.5
     sceneGroup:insert(btn_sounds)
 
     -- Transitions
-    moveNaoki = transition.to(naoki, {x=_CX, delay=250})
-    moveOrc = transition.to(orc, {x=_CX - 600, delay=250})
+    moveNaoki = transition.to(naoki, {x=_CX - 350, delay=250})
+    moveOrc = transition.to(orc, {x=_CX - 1250, delay=250})
 
 end
 

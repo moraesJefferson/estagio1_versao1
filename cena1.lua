@@ -126,9 +126,9 @@ function scene:create( event )
             enemy[enemyCounter].x = _L - 50
             enemy[enemyCounter].y = lane[1].y
             enemy[enemyCounter].id = "enemy"
-            enemy[enemyCounter].xScale = 1.5
-            enemy[enemyCounter].yScale = 1.5
-            physics.addBody(enemy[enemyCounter],'static')
+            enemy[enemyCounter].xScale = 3
+            enemy[enemyCounter].yScale = 3
+            physics.addBody(enemy[enemyCounter],'static',{density = 20})
             enemy[enemyCounter].isFixedRotation = true 
             sceneGroup:insert(enemy[enemyCounter])            
 
@@ -141,12 +141,14 @@ function scene:create( event )
         end
     end
 
-    local background = display.newImageRect(sceneGroup, "image/cenarios/cena1.png", 1920, 1080)
+    local background = display.newImageRect(sceneGroup, "image/cenarios/cena1_full.png", 1920, 1080)
         background.x = _CX
         background.y = _CY
+        background.xScale = 2
+        background.yScale = 2
 
     for i=1,1 do 
-        lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 1490, 100)
+        lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 3600, 100)
         lane[i].x = _CX * 0.775
         if(i==1) then
             lane[i].y = _B * 0.884
@@ -158,22 +160,22 @@ function scene:create( event )
     
     local castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
         castelo.x = _R * 0.9
-        castelo.y = _B * 0.65
+        castelo.y = _B * 0.63
+        castelo.xScale = 2
+        castelo.yScale = 2
 
-    player = display.newSprite(playerSheet, playerSequenceData)
-          
-    player.x = _CX / 0.67
-    player.y = _CY / 0.8
+    player = display.newSprite(playerSheet, playerSequenceData)     
+    player.x = _CX / 0.37
+    player.y = _CY / 0.82
     player.force = 0
     player.id = "player_shoot"
-    player.xScale = 1.5
-    player.yScale = 1.5
+    player.xScale = 2.5
+    player.yScale = 2.5
     sceneGroup:insert(player)
     physics.addBody(player,'static')
     player:setSequence("stop")
     player:play()
     player.isVisible = true;
-
 
     getTrajectoryPoint = function( startingPosition, startingVelocity, n )
  
@@ -200,10 +202,10 @@ function scene:create( event )
         startingVelocity.x = startingVelocity.x * forceMultiplier --MOD
         startingVelocity.y = startingVelocity.y * forceMultiplier --MOD
 
-        for i = 1,240,2 do
+        for i = 1,-240,-1 do
             local s = { x=event.xStart, y=event.yStart }
             local trajectoryPosition = getTrajectoryPoint( s, startingVelocity, i )
-            --local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 4 )
+            local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 6 )
         end
     end
 
@@ -253,11 +255,12 @@ function scene:create( event )
         bulletCounter = bulletCounter + 1
         bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
         bullets[bulletCounter].x = player.x  
-        if(event.yStart < 676 or event.yStart > 708 ) then
-            bullets[bulletCounter].y = 676
-        else
-            bullets[bulletCounter].y = event.yStart
-        end
+        --if(event.yStart < 676 or event.yStart > 708 ) then
+           -- bullets[bulletCounter].y = 676
+       -- else
+         --   bullets[bulletCounter].y = event.yStart
+        --end
+        bullets[bulletCounter].y = player.y
         bullets[bulletCounter].id = "bullet"
         physics.addBody(bullets[bulletCounter],{density = 1.0, bounce = 0.2, radius=4})
         bullets[bulletCounter].isSensor = true
@@ -283,6 +286,7 @@ function scene:create( event )
     local function playerShoot( event )
         evento = event
             local eventX, eventY = event.x, event.y
+            if  (event.x == player.x) then
                 if ( event.phase == "began" ) then
                     forceMultiplier = intialForceMultiplier --MOD
                     Runtime:addEventListener( "enterFrame", enterFrame ) --MOD
@@ -292,7 +296,7 @@ function scene:create( event )
                     display.remove( line )
                     line = display.newLine( event.xStart, event.yStart, eventX, eventY )
                     line.strokeWidth = 4 ; line.alpha = 0.6 --MOD
-                    updatePrediction( event ) 
+                    updatePrediction( event )
                 else 
                     display.remove( line )
                     updatePrediction( event )
@@ -300,6 +304,7 @@ function scene:create( event )
                     player:play()
                     Runtime:removeEventListener( "enterFrame", enterFrame )   
                 end
+            end
         return true
     end
     

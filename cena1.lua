@@ -42,7 +42,7 @@ local line
 local predictedPath = display.newGroup()
 predictedPath.alpha = 0.2
 
-local intialForceMultiplier = 2 --MOD
+local intialForceMultiplier = 1 --MOD
 local perFrameDelta = 1.005  --MOD
 local forceMultiplier = intialForceMultiplier  --MOD
 local lastEvent  --MOD
@@ -56,10 +56,10 @@ local lane = {}
 local player, waiting
 local enemy = {} -- table to hold enemy objects
 local enemyCounter = 0 -- number of enemies sent
-local enemySendSpeed = 500 -- how often to send the enemies
+local enemySendSpeed = 250 -- how often to send the enemies
 local enemyTravelSpeed = 10000 -- how fast enemies travel across the scree
 local enemyIncrementSpeed = 1.5 -- how much to increase the enemy speed
-local enemyMaxSendSpeed = 25 -- max send speed, if this is not set, the enemies could just be one big flood 
+local enemyMaxSendSpeed = 20 -- max send speed, if this is not set, the enemies could just be one big flood 
 
 local poof = {}
 local poofCounter = 0
@@ -197,16 +197,16 @@ function scene:create( event )
         predictedPath = display.newGroup()
         predictedPath.alpha = 0.2
  
-        local startingVelocity = { x=event.x-event.xStart, y=event.y-event.yStart }
+        local startingVelocity = { x=player.x-event.xStart, y=player.y-event.yStart }
 
         startingVelocity.x = startingVelocity.x * forceMultiplier --MOD
         startingVelocity.y = startingVelocity.y * forceMultiplier --MOD
 
-        for i = 1,-240,-1 do
-            local s = { x=event.xStart, y=event.yStart }
-            local trajectoryPosition = getTrajectoryPoint( s, startingVelocity, i )
-            local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 6 )
-        end
+        -- for i = 1,-240,-1 do
+        --     local s = { x=event.xStart, y=event.yStart }
+        --     local trajectoryPosition = getTrajectoryPoint( s, startingVelocity, i )
+        --     local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 6 )
+        -- end
     end
 
     local function onCollision(event)
@@ -249,30 +249,27 @@ function scene:create( event )
 
     end
 
+
     local function shoot(event)
         audio.play(_THROW)
 
         bulletCounter = bulletCounter + 1
         bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
         bullets[bulletCounter].x = player.x  
-        --if(event.yStart < 676 or event.yStart > 708 ) then
-           -- bullets[bulletCounter].y = 676
-       -- else
-         --   bullets[bulletCounter].y = event.yStart
-        --end
         bullets[bulletCounter].y = player.y
         bullets[bulletCounter].id = "bullet"
-        physics.addBody(bullets[bulletCounter],{density = 1.0, bounce = 0.2, radius=4})
+        physics.addBody(bullets[bulletCounter],{density = 10.0, bounce = 0.2, radius=4})
         bullets[bulletCounter].isSensor = true
         local vx, vy = (event.x-event.xStart)*-1, (event.y-event.yStart)*-1
-        local atanVal = math.atan2(event.y - event.xStart,event.x - event.yStart)
-        --bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi) 
+        bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
         bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
-        
+        bullets[bulletCounter].angularVelocity = -40
+        bullets[bulletCounter].gravityScale = 2
+
+
         if(self~=nil) then 
             display.remove(self)
         end
-
     end
 
     
@@ -286,7 +283,7 @@ function scene:create( event )
     local function playerShoot( event )
         evento = event
             local eventX, eventY = event.x, event.y
-            if  (event.x == player.x) then
+           
                 if ( event.phase == "began" ) then
                     forceMultiplier = intialForceMultiplier --MOD
                     Runtime:addEventListener( "enterFrame", enterFrame ) --MOD
@@ -304,7 +301,7 @@ function scene:create( event )
                     player:play()
                     Runtime:removeEventListener( "enterFrame", enterFrame )   
                 end
-            end
+            
         return true
     end
     

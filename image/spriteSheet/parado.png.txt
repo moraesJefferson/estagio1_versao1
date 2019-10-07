@@ -1,1 +1,0 @@
-parado_01.png.png 33 13, parado_02.png.png 131 11, parado_03.png.png 233 11, parado_04.png.png 333 13.

@@ -58,7 +58,7 @@ function scene:create( event )
 
     -- Initialize the scene here.
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
-    local background = display.newImageRect(sceneGroup, "image/menu/menu2.png", 1920 , 1080)
+    local background = display.newImageRect(sceneGroup, "image/menu/menu1.png", 1920 , 1080)
         background.x = _CX; background.y = _CY;
         background.xScale = 2
         background.yScale = 2
@@ -120,8 +120,8 @@ function scene:create( event )
     sceneGroup:insert(btn_sounds)
 
     -- Transitions
-    moveNaoki = transition.to(naoki, {x=_CX - 350, delay=250})
-    moveOrc = transition.to(orc, {x=_CX - 1250, delay=250})
+    moveNaoki = transition.to(naoki, {x=_CX - 350, time=750, delay=250})
+    moveOrc = transition.to(orc, {x=_CX - 1250, time=750, delay=250})
 
 end
 

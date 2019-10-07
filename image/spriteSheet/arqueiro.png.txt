@@ -1,1 +1,0 @@
-arqueiro_01.png.png 27 19, arqueiro_02.png.png 125 21, arqueiro_03.png.png 217 23, arqueiro_04.png.png 323 21, arqueiro_05.png.png 27 19, arqueiro_06.png.png 125 21, arqueiro_07.png.png 217 23, arqueiro_08.png.png 323 21, arqueiro_09.png.png 27 19, arqueiro_10.png.png 125 21.

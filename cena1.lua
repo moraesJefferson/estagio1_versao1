@@ -21,12 +21,13 @@ local playerSequenceData = {
     {name="stop", start=10, count=4, time=1000, loopCount=0}
 }
 
-local orcSheetData = {width=77, height=61, numFrames=6, sheetContentWidth=462, sheetContentHeight=61}
-local orcSheet1 = graphics.newImageSheet("image/spriteSheet/orc1_run.png", orcSheetData)
+local orcSheetData = {width=77, height=61, numFrames=13, sheetContentWidth=1001, sheetContentHeight=61}
+local orcSheet1 = graphics.newImageSheet("image/spriteSheet/orc1_sprite.png", orcSheetData)
 --local pirateSheet2 = graphics.newImageSheet("images/characters/pirate2.png", pirateSheetData)
 --local pirateSheet3 = graphics.newImageSheet("images/characters/pirate3.png", pirateSheetData)
 local orcSequenceData = {
-    {name="run", start=1, count=6, time=575, loopCount=0}
+    {name="attack", start=1, count=7, time=575, loopCount=0},
+    {name="run", start=8, count=5, time=575, loopCount=0}
 }
  
 -- -----------------------------------------------------------------------------------------------------------------
@@ -36,8 +37,9 @@ local orcSequenceData = {
 -- local forward references should go here
 
 -- Create display group for predicted trajectory
+local T
 local evento
-local teste
+local teste = false
 local line
 local predictedPath = display.newGroup()
 predictedPath.alpha = 0.2
@@ -110,6 +112,12 @@ function scene:create( event )
         lane[i].id = i
     end 
 
+    local rect1 = display.newRect( _R * 0.7, _B+75 ,1500,20)
+    rect1:setFillColor(0,0,0,0)
+    rect1.strokeWidth = 6
+    rect1:setStrokeColor(0)
+    physics.addBody(rect1,'static',{bounce=0.0,friction=0.0})
+
     castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
     castelo.id = "castelo"
     castelo.name = "castelo"
@@ -118,10 +126,8 @@ function scene:create( event )
     castelo.xScale = 2
     castelo.yScale = 2
     sceneGroup:insert(castelo)
-    physics.addBody(castelo,'static',{radius=860,density=1.0})
-    --castelo.isBullet = true
-
-
+    physics.addBody(castelo,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+    
     player = display.newSprite(playerSheet, playerSequenceData)     
     player.x = _CX / 0.37
     player.y = _CY / 0.82
@@ -130,7 +136,7 @@ function scene:create( event )
     player.xScale = 2.5
     player.yScale = 2.5
     sceneGroup:insert(player)
-    physics.addBody(player,'static')
+    --physics.addBody(player,'static',{bounce=0.0})
     player:setSequence("stop")
     player:play()
     player.isVisible = true;
@@ -140,6 +146,7 @@ function scene:create( event )
         player:setSequence("stop")
         player:play() 
     end
+
 
     local function sendEnemies()
         -- timeCounter : keeps track of the time in the game, starts at 0
@@ -171,13 +178,16 @@ function scene:create( event )
             enemy[enemyCounter].id = "enemy"
             enemy[enemyCounter].xScale = 3
             enemy[enemyCounter].yScale = 3
-            physics.addBody(enemy[enemyCounter],'static',{radius = 80, density = 20})
+            enemy[enemyCounter].gravityScale = -30
+            physics.addBody(enemy[enemyCounter],'kinematic',{isSensor=true,radius = 80,bounce=0.0,friction=0.0})
             enemy[enemyCounter].isFixedRotation = true 
-            sceneGroup:insert(enemy[enemyCounter])            
+            sceneGroup:insert(enemy[enemyCounter])
 
             transition.to(enemy[enemyCounter], {x=_R+50, time=enemyTravelSpeed, onComplete=function(self) 
-                    if(self~=nil) then display.remove(self); end 
-                end})
+                 if(self~=nil) then 
+                    display.remove(self);
+                end 
+            end})
 
             enemy[enemyCounter]:setSequence("run")
             enemy[enemyCounter]:play()
@@ -222,11 +232,6 @@ function scene:create( event )
             print("testando5") 
             display.remove(obj1)
             display.remove(obj2)
-            --if(obj1.id == "enemy") then 
-               -- enemyHit(event.object1.x, event.object1.y)
-            --else
-               -- enemyHit(event.object2.x, event.object2.y)
-            --end
         end
 
         local function showPlayerHit()
@@ -238,25 +243,31 @@ function scene:create( event )
 
         local function removeOnPlayerHit(obj1, obj2)
             if(obj1 ~= nil and obj1.id == "enemy") then 
-                print("testando1")
                 display.remove(obj1)
             end
             if(obj2 ~= nil and obj2.id == "enemy") then
-                print("testando2") 
-                display.remove(obj2)
+                 display.remove(obj2)
             end
         end
 
-        if( (event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")  ) then 
+        local function spriteListenerEnemy( event )
+            if (event.phase == "loop" and event.target.sequence == "attack" ) then
+                removeOnPlayerHit(nil, evento)
+            end
+        end
+
+        if((event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")) then 
             removeOnEnemyHit(event.object1, event.object2)
         elseif(event.object1.id == "enemy" and event.object2.id == "castelo") then 
-            --showPlayerHit()
-            print("testando3") 
+            --showPlayerHit() 
             removeOnPlayerHit(event.object1, nil)
         elseif(event.object1.id == "castelo" and event.object2.id == "enemy") then 
             --showPlayerHit()
-            print("testando4") 
-            removeOnPlayerHit(nil, event.object2)
+            evento = event.object2
+            enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
+            transition.cancel()
+            enemy[enemyCounter]:setSequence("attack")
+            enemy[enemyCounter]:play()
         end
 
     end
@@ -322,14 +333,14 @@ function scene:create( event )
             stop()
         elseif (player.frame == 8 and event.target.sequence == "shooting" ) then
             shoot(evento)
-        end  
+        end
     end
 
     -- Add sprite listener
     player:addEventListener( "sprite", spriteListener )
     Runtime:addEventListener( "touch", playerShoot)
     Runtime:addEventListener( "enterFrame", sendEnemies)
-    Runtime:addEventListener( "collision", onCollision )
+    Runtime:addEventListener( "collision", onCollision )   
 end
 
 

@@ -11,7 +11,7 @@ widget.setTheme( "widget_theme_android_holo_light" )
 local physics = require "physics"
 physics.start()
 physics.setGravity(0,30)
-physics.setDrawMode( "hybrid" )
+physics.setDrawMode( "normal" )
 
 
 local playerSheetData = {width=100, height=74, numFrames=13, sheetContentWidth=1300, sheetContentHeight=74}
@@ -56,6 +56,7 @@ local launchProjectile
 local lane = {}
 
 local player, waiting, castelo
+local castleLife,healthBar,damageBar,nameBar,lifeBar,myText,life,circle
 local enemy = {} -- table to hold enemy objects
 local enemyCounter = 0 -- number of enemies sent
 local enemySendSpeed = 600 -- how often to send the enemies
@@ -85,16 +86,36 @@ function scene:create( event )
 
     local sceneGroup = self.view
 
-
     -- Initialize the scene here.
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
     local function returnToMenu(event)
         if(event.phase == "ended") then 
             audio.play(_CLICK)
+            user.exitMenu = true
+	        loadsave.saveTable(user, "user.json")
             composer.gotoScene("scene_menu", "slideRight")
         end 
     end
 
+    local function verificaTotalDeFlechas(event)
+        if(user.arrowQtd == 0) then
+            if(castelo.isVisible == true) then
+                display.remove(castelo)
+            elseif(castelo2.isVisible == true) then
+                display.remove(castelo2)
+            end
+            display.remove(player)
+            display.remove(healthBar)
+            display.remove(damageBar)
+            display.remove(nameBar)
+            display.remove(myText)
+            display.remove(life)
+            display.remove(lifeBar)
+            display.remove(circle)
+
+            onGameOver()
+        end
+    end
     local background = display.newImageRect(sceneGroup, "image/cenarios/cena1_full.png", 1920, 1080)
     background.x = _CX
     background.y = _CY
@@ -127,7 +148,27 @@ function scene:create( event )
     castelo.yScale = 2
     sceneGroup:insert(castelo)
     physics.addBody(castelo,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-    
+
+    castelo2 = display.newImageRect(sceneGroup, "image/cenarios/castelo_inAttack.png", 800, 700)
+    castelo2.x = _R * 0.9
+    castelo2.y = _B * 0.63
+    castelo2.xScale = 2
+    castelo2.yScale = 2
+    sceneGroup:insert(castelo2)
+    physics.addBody(castelo2,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+
+    castelo3 = display.newImageRect(sceneGroup, "image/cenarios/castelo_destroy.png", 800, 555)
+    castelo3.x = _R * 0.9
+    castelo3.y = _B * 0.735
+    castelo3.xScale = 1.9
+    castelo3.yScale = 1.8
+    sceneGroup:insert(castelo3)
+    --physics.addBody(castelo3,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+
+    castelo.isVisible = true
+    castelo2.isVisible = false
+    castelo3.isVisible = false
+
     player = display.newSprite(playerSheet, playerSequenceData)     
     player.x = _CX / 0.37
     player.y = _CY / 0.82
@@ -146,6 +187,80 @@ function scene:create( event )
         player:setSequence("stop")
         player:play() 
     end
+
+    function castleHealthDemage()
+        local maxHealth = 900
+        local currentHealth = 900
+
+        healthBar = display.newRoundedRect(_R * 0.6 + 180, 150, user.castleLife, 60,60)
+        healthBar:setFillColor( 0, 0, 0 )
+
+        damageBar = display.newRoundedRect(_R * 0.6 + 180 , 150, 0, 60,30)
+        damageBar:setFillColor( 255, 0, 0 )
+
+        nameBar = display.newRoundedRect(_R * 0.83, 89, 500, 60,7)
+        nameBar:setFillColor (.50, .50, .50)
+        nameBar.strokeWidth = 5
+        nameBar:setStrokeColor(0,0,0)
+
+        myText = display.newText( "Castle", nameBar.x-50, nameBar.y, native.newFont( "Augusta"), 70 )
+        myText:setFillColor( 255, 255, 255 )
+
+        lifeBar = display.newRoundedRect(_R * 0.8, 211, 550, 60,7)
+        lifeBar:setFillColor (.50, .50, .50)
+        lifeBar.strokeWidth = 5
+        lifeBar:setStrokeColor(0,0,0)
+
+        life = display.newText( tostring(currentHealth).." / "..tostring(maxHealth), lifeBar.x-25, lifeBar.y, native.newFont( "Augusta"), 70 )
+        myText:setFillColor( 255, 255, 255 )
+
+        circle = display.newCircle( _R*0.925, 150, 125 )
+
+        local paint = {
+            type = "image",
+            filename = "image/cenarios/castle_life.png"
+        }
+
+        circle.fill = paint
+
+        local function updateDamageBar()
+            damageBar.width = maxHealth - currentHealth
+            damageBar.x = healthBar.x - (healthBar.width/2 - damageBar.width/2)
+            life.text = tostring(currentHealth).." / "..tostring(maxHealth)
+        end
+    
+        local closure = function(damageTaken)
+            currentHealth = currentHealth - damageTaken
+            if(currentHealth  <= 600 and currentHealth > 0) then
+                castelo2.isVisible = true
+                castelo.isVisible = false
+                display.remove(castelo)
+                castelo2.id = "castelo"
+                castelo2.name = "castelo"
+            elseif(currentHealth <= 0) then
+                -- castelo2.isVisible = false
+                -- castelo3.isVisible = true
+                -- display.remove(castelo2)
+                -- castelo3.id = "castelo"
+                -- castelo3.name = "castelo"
+                display.remove(player)
+                display.remove(castelo2)
+                display.remove(healthBar)
+                display.remove(damageBar)
+                display.remove(nameBar)
+                display.remove(myText)
+                display.remove(life)
+                display.remove(lifeBar)
+                display.remove(circle)
+
+                onGameOver()
+            end
+            updateDamageBar()
+        end
+        return closure
+    end
+
+    castleLife = castleHealthDemage()
 
 
     local function sendEnemies()
@@ -246,7 +361,8 @@ function scene:create( event )
                 display.remove(obj1)
             end
             if(obj2 ~= nil and obj2.id == "enemy") then
-                 display.remove(obj2)
+                castleLife(900)
+                display.remove(obj2)
             end
         end
 
@@ -259,8 +375,12 @@ function scene:create( event )
         if((event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")) then 
             removeOnEnemyHit(event.object1, event.object2)
         elseif(event.object1.id == "enemy" and event.object2.id == "castelo") then 
-            --showPlayerHit() 
-            removeOnPlayerHit(event.object1, nil)
+            --showPlayerHit()
+            evento = event.object1
+            enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
+            transition.cancel()
+            enemy[enemyCounter]:setSequence("attack")
+            enemy[enemyCounter]:play()
         elseif(event.object1.id == "castelo" and event.object2.id == "enemy") then 
             --showPlayerHit()
             evento = event.object2
@@ -292,6 +412,8 @@ function scene:create( event )
 
         if(self~=nil) then 
             display.remove(self)
+            user.arrowQtd =  user.arrowQtd - 1
+            loadsave.saveTable(user, "user.json")
         end
     end
 
@@ -327,11 +449,83 @@ function scene:create( event )
             
         return true
     end
+
+    function onGameOver()
+        audio.play(_GAMEOVER)
+
+        -- if(tmr_playershoot) then 
+        --     timer.cancel(tmr_playershoot)
+        -- end 
+        Runtime:removeEventListener( "touch", playerShoot)
+        Runtime:removeEventListener("enterFrame", sendEnemies)
+        Runtime:removeEventListener("collision", onCollision)
+        Runtime:removeEventListener( "enterFrame", verificaTotalDeFlechas)
+
+        transition.pause()
+
+        -- for i=1,#lane do
+        --     lane[i]:removeEventListener("touch", onLaneTouch)
+        -- end
+
+        for i=1,#enemy do
+            if(enemy[i] ~= nil) then 
+                display.remove(enemy[i]) 
+            end
+        end 
+
+        gameoverBackground = display.newRect(sceneGroup, 0, 0, 1920, 1080)
+        
+            castelo3.isVisible = true
+
+            gameoverBackground.x = _CX
+            gameoverBackground.y = _CY
+            gameoverBackground.xScale = 2
+            gameoverBackground.yScale = 2
+            gameoverBackground:setFillColor(0)
+            gameoverBackground.alpha = 0.6
+
+        gameOverBox = display.newImageRect(sceneGroup, "image/cenarios/game_over.png",1200, 300)
+            gameOverBox.x = _CX 
+            gameOverBox.y = _CY*0.6
+  
+
+        btn_Continue = widget.newButton {
+            width = 480,
+            height = 200,
+            label = "CONTINUE",
+            labelColor = { default={ 255, 255, 255 } },
+            font = native.newFont( "Augusta"),
+            fontSize = 72,
+            defaultFile = "image/cenarios/buttonDefault3.png",
+            overFile = "image/cenarios/buttonOver.png",
+            --onEvent = returnToMenu
+        }
+        btn_Continue.x = _CX
+        btn_Continue.y =  _CY / 0.8
+        sceneGroup:insert(btn_Continue)
+
+        btn_returnToMenu = widget.newButton {
+            width = 480,
+            height = 200,
+            label = "MENU",
+            labelColor = { default={ 255, 255, 255 } },
+            font = native.newFont( "Augusta"),
+            fontSize = 72,
+            defaultFile = "image/cenarios/buttonDefault3.png",
+            overFile = "image/cenarios/buttonOver.png",
+            onEvent = returnToMenu
+        }
+        btn_returnToMenu.x = _CX
+        btn_returnToMenu.y =  _CY / 0.65
+        sceneGroup:insert(btn_returnToMenu)
+    end
+
     
     local function spriteListener( event )
         if(event.phase == "ended" and event.target.sequence == "shooting" ) then
             stop()
         elseif (player.frame == 8 and event.target.sequence == "shooting" ) then
+            print(user.arrowQtd)
             shoot(evento)
         end
     end
@@ -340,7 +534,8 @@ function scene:create( event )
     player:addEventListener( "sprite", spriteListener )
     Runtime:addEventListener( "touch", playerShoot)
     Runtime:addEventListener( "enterFrame", sendEnemies)
-    Runtime:addEventListener( "collision", onCollision )   
+    Runtime:addEventListener( "collision", onCollision )
+    Runtime:addEventListener( "enterFrame", verificaTotalDeFlechas)   
 end
 
 

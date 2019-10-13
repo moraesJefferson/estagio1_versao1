@@ -123,6 +123,7 @@ function scene:create( event )
     moveNaoki = transition.to(naoki, {x=_CX - 350, time=750, delay=250})
     moveOrc = transition.to(orc, {x=_CX - 1250, time=750, delay=250})
 
+    print(user.castleLife)
 end
 
 
@@ -138,6 +139,44 @@ function scene:show( event )
         -- Called when the scene is now on screen.
         -- Insert code here to make the scene come alive.
         -- Example: start timers, begin animation, play audio, etc.
+
+        audio.play(_BACKGROUNDMUSIC,{loops=-1, fadein=2500})
+
+        local cenaAnterior = composer.getSceneName("previous")
+        if(cenaAnterior) then
+            composer.removeScene(cenaAnterior)
+            if(user.continue == 0 or user.exitMenu == true) then 
+                user = {}
+                user.continue = 3
+                user.arrowRecovered = 5
+                user.arrowQtd = 10
+                user.arrowQtdLevel = 1
+                user.arrowQtdLevelMax = 3
+                user.arrowDamage = 100
+                user.arrowDamageLevel = 1
+                user.arrowDamageLevelMax = 3
+                user.castleLife = 900
+                user.castleLifeLevel = 1
+                user.castleLifeLevelMax = 3
+                user.orc1Damage = 90
+                user.orc2Damage = 105
+                user.orc3Damage = 120
+                user.orcGiantDamage = 180
+                user.orc1Life = 100
+                user.orc2Life = 120
+                user.orc3Life = 150
+                user.orcGiantLife = 300
+                user.xp = 0
+                user.orc1Xp = 25
+                user.orc2Xp = 50
+                user.orc3Xp = 100
+                user.orcGiantXp = 250
+                user.playsound = true
+                user.exitMenu = false
+                loadsave.saveTable(user, "user.json")
+            end
+        end
+
     end
 end
 

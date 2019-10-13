@@ -37,15 +37,33 @@ _CLICK = audio.loadSound("audio/click.mp3")
 
 -- set up a saved file for our user
 user = loadsave.loadTable("user.json")
-if(user == nil) then 
-	user = {}
-	user.money = 100
-	user.shootlevel = 0
-	user.shootlevelmax = 10
-	user.liveslevel = 0
-	user.liveslevelmax = 10
-	user.playsound = true
-	loadsave.saveTable(user, "user.json")
-end
+user = {}
+user.continue = 3
+user.arrowRecovered = 5
+user.arrowQtd = 10
+user.arrowQtdLevel = 1
+user.arrowQtdLevelMax = 3
+user.arrowDamage = 100
+user.arrowDamageLevel = 1
+user.arrowDamageLevelMax = 3
+user.castleLife = 900
+user.castleLifeLevel = 1
+user.castleLifeLevelMax = 3
+user.orc1Damage = 90
+user.orc2Damage = 105
+user.orc3Damage = 120
+user.orcGiantDamage = 180
+user.orc1Life = 100
+user.orc2Life = 120
+user.orc3Life = 150
+user.orcGiantLife = 300
+user.xp = 0
+user.orc1Xp = 25
+user.orc2Xp = 50
+user.orc3Xp = 100
+user.orcGiantXp = 250
+user.playsound = true
+user.exitMenu = false
+loadsave.saveTable(user, "user.json")
 
 composer.gotoScene("scene_menu")

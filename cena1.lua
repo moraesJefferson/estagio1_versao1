@@ -21,6 +21,14 @@ local playerSequenceData = {
     {name="stop", start=10, count=4, time=1000, loopCount=0}
 }
 
+local castleSheetData = {width=1427, height=1129, numFrames=3, sheetContentWidth=4281, sheetContentHeight=1129}
+local castleSheet = graphics.newImageSheet("image/spriteSheet/castle1_sprite2.png", castleSheetData)
+local castleSequenceData = {
+    {name="complete", start=1, count=1, time=100, loopCount=0},
+    {name="on_attack", start=2, count=1, time=1000, loopCount=0},
+    {name="destroy", start=3, count=1, time=1000, loopCount=0}
+}
+
 local orcSheetData = {width=77, height=61, numFrames=13, sheetContentWidth=1001, sheetContentHeight=61}
 local orcSheet1 = graphics.newImageSheet("image/spriteSheet/orc1_sprite.png", orcSheetData)
 --local pirateSheet2 = graphics.newImageSheet("images/characters/pirate2.png", pirateSheetData)
@@ -29,7 +37,18 @@ local orcSequenceData = {
     {name="attack", start=1, count=7, time=575, loopCount=0},
     {name="run", start=8, count=5, time=575, loopCount=0}
 }
- 
+
+local poofSheetData = {width=165, height=180, numFrames=5, sheetContentWidth=825, sheetContentHeight=180}
+local poofSheet = graphics.newImageSheet("image/spriteSheet/poof.png", poofSheetData)
+local poofSequenceData = {
+    {name="puff", start=1, count=5, time=1000, loopCount=2}
+}
+
+local collisionSheetData = {width=165, height=180, numFrames=6, sheetContentWidth=990, sheetContentHeight=180}
+local collisionSheet = graphics.newImageSheet("image/spriteSheet/puff_collision.png", collisionSheetData)
+local collisionSequenceData = {
+    {name="puff_collision", start=1, count=6, time=1000, loopCount=2}
+}
 -- -----------------------------------------------------------------------------------------------------------------
 -- All code outside of the listener functions will only be executed ONCE unless "composer.removeScene()" is called.
 -- -----------------------------------------------------------------------------------------------------------------
@@ -55,7 +74,7 @@ local launchProjectile
 
 local lane = {}
 
-local player, waiting, castelo
+local player, waiting, castelo,textArrow
 local castleLife,healthBar,damageBar,nameBar,lifeBar,myText,life,circle
 local enemy = {} -- table to hold enemy objects
 local enemyCounter = 0 -- number of enemies sent
@@ -66,7 +85,9 @@ local enemyMaxSendSpeed = 20 -- max send speed, if this is not set, the enemies 
 
 local poof = {}
 local poofCounter = 0
+local poof_collision = {}
 
+local temp
 local timeCounter = 0 -- how much time has passed in the game
 local pauseGame = false -- is the game paused?
 local pauseBackground, btn_pause, pauseText, pause_returnToMenu, pauseReminder -- forward declares
@@ -97,6 +118,17 @@ function scene:create( event )
         end 
     end
 
+    local function restartGame(event)
+        if(event.phase == "ended") then 
+            audio.play(_CLICK)
+            user.continue = user.continue - 1
+            user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
+            loadsave.saveTable(user, "user.json")
+            composer.removeScene( "cena1",false )
+            composer.gotoScene("cena1", "slideRight")
+        end
+    end
+
     local function verificaTotalDeFlechas(event)
         if(user.arrowQtd == 0) then
             if(castelo.isVisible == true) then
@@ -122,8 +154,20 @@ function scene:create( event )
     background.xScale = 2
     background.yScale = 2
 
+    local qtdArrow = display.newImageRect(sceneGroup, "image/spriteSheet/arrow_reta.png", 54, 54)
+    qtdArrow.x = _L*0.925
+    qtdArrow.y = 150
+    qtdArrow.xScale = 2
+    qtdArrow.yScale = 2
+
+    textArrow = display.newText( " x"..tostring(user.arrowQtd), qtdArrow.x+100, qtdArrow.y, native.newFont( "Augusta"), 90 )
+    textArrow:setFillColor( 255, 255, 255 )
+
+    textScore = display.newText( "SCORE  "..tostring(user.xp), _CX-300, _CY * 0.15, native.newFont( "Augusta"), 110 )
+    textScore:setFillColor( 255, 255, 255 )
+
     for i=1,1 do 
-        lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 3600, 100)
+        lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 3500, 100)
         lane[i].x = _CX * 0.775
         if(i==1) then
             lane[i].y = _B * 0.884
@@ -139,35 +183,51 @@ function scene:create( event )
     rect1:setStrokeColor(0)
     physics.addBody(rect1,'static',{bounce=0.0,friction=0.0})
 
-    castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
+    -- castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
+    -- castelo.id = "castelo"
+    -- castelo.name = "castelo"
+    -- castelo.x = _R * 0.9
+    -- castelo.y = _B * 0.63
+    -- castelo.xScale = 2
+    -- castelo.yScale = 2
+    -- sceneGroup:insert(castelo)
+    -- physics.addBody(castelo,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+
+    -- castelo2 = display.newImageRect(sceneGroup, "image/cenarios/castelo_inAttack.png", 800, 700)
+    -- castelo2.x = _R * 0.9
+    -- castelo2.y = _B * 0.63
+    -- castelo2.xScale = 2
+    -- castelo2.yScale = 2
+    -- sceneGroup:insert(castelo2)
+    -- physics.addBody(castelo2,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+
+    -- castelo3 = display.newImageRect(sceneGroup, "image/cenarios/castelo_destroy.png", 800, 555)
+    -- castelo3.x = _R * 0.9
+    -- castelo3.y = _B * 0.735
+    -- castelo3.xScale = 1.9
+    -- castelo3.yScale = 1.8
+    -- sceneGroup:insert(castelo3)
+    -- --physics.addBody(castelo3,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
+
+    -- castelo.isVisible = true
+    -- castelo2.isVisible = false
+    -- castelo3.isVisible = false
+
+    castelo = display.newSprite(castleSheet, castleSequenceData)
+    --display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
     castelo.id = "castelo"
     castelo.name = "castelo"
+    castelo.width = 800
+    castelo.height = 700
     castelo.x = _R * 0.9
     castelo.y = _B * 0.63
-    castelo.xScale = 2
-    castelo.yScale = 2
+    castelo.xScale = 1.15
+    castelo.yScale = 1.2
     sceneGroup:insert(castelo)
     physics.addBody(castelo,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    castelo2 = display.newImageRect(sceneGroup, "image/cenarios/castelo_inAttack.png", 800, 700)
-    castelo2.x = _R * 0.9
-    castelo2.y = _B * 0.63
-    castelo2.xScale = 2
-    castelo2.yScale = 2
-    sceneGroup:insert(castelo2)
-    physics.addBody(castelo2,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    castelo3 = display.newImageRect(sceneGroup, "image/cenarios/castelo_destroy.png", 800, 555)
-    castelo3.x = _R * 0.9
-    castelo3.y = _B * 0.735
-    castelo3.xScale = 1.9
-    castelo3.yScale = 1.8
-    sceneGroup:insert(castelo3)
-    --physics.addBody(castelo3,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    castelo.isVisible = true
-    castelo2.isVisible = false
-    castelo3.isVisible = false
+    castelo:setSequence("complete")
+    castelo:play()
+    castelo.isVisible = true;
 
     player = display.newSprite(playerSheet, playerSequenceData)     
     player.x = _CX / 0.37
@@ -188,6 +248,14 @@ function scene:create( event )
         player:play() 
     end
 
+    local function countArrowText()
+        textArrow.text = " x"..tostring(user.arrowQtd)
+    end
+
+    local function countScoreText()
+        textScore.text = "SCORE  "..tostring(user.xp)
+    end
+ 
     function castleHealthDemage()
         local maxHealth = 900
         local currentHealth = 900
@@ -226,34 +294,24 @@ function scene:create( event )
         local function updateDamageBar()
             damageBar.width = maxHealth - currentHealth
             damageBar.x = healthBar.x - (healthBar.width/2 - damageBar.width/2)
+            if(currentHealth < 0) then
+                currentHealth = 0
+            end
             life.text = tostring(currentHealth).." / "..tostring(maxHealth)
         end
     
         local closure = function(damageTaken)
             currentHealth = currentHealth - damageTaken
             if(currentHealth  <= 600 and currentHealth > 0) then
-                castelo2.isVisible = true
-                castelo.isVisible = false
-                display.remove(castelo)
-                castelo2.id = "castelo"
-                castelo2.name = "castelo"
+                -- castelo.isVisible = false
+                -- castelo2.isVisible = true
+                -- display.remove(castelo)
+                -- castelo2.id = "castelo"
+                -- castelo2.name = "castelo"
+                castelo:setSequence("on_attack")
+                castelo:play()
             elseif(currentHealth <= 0) then
-                -- castelo2.isVisible = false
-                -- castelo3.isVisible = true
-                -- display.remove(castelo2)
-                -- castelo3.id = "castelo"
-                -- castelo3.name = "castelo"
-                display.remove(player)
-                display.remove(castelo2)
-                display.remove(healthBar)
-                display.remove(damageBar)
-                display.remove(nameBar)
-                display.remove(myText)
-                display.remove(life)
-                display.remove(lifeBar)
-                display.remove(circle)
-
-                onGameOver()
+                timer.performWithDelay( 1000, onGameOver )
             end
             updateDamageBar()
         end
@@ -279,7 +337,8 @@ function scene:create( event )
                 enemySendSpeed = enemyMaxSendSpeed
             end
 
-            --local temp = math.random(1,3)
+            --temp = math.random(1,3)
+            temp = 1
             --if(temp == 1) then 
                 enemy[enemyCounter] = display.newSprite(orcSheet1, orcSequenceData)
             --elseif(temp == 2) then 
@@ -291,6 +350,7 @@ function scene:create( event )
             enemy[enemyCounter].x = _L - 50
             enemy[enemyCounter].y = lane[1].y-75
             enemy[enemyCounter].id = "enemy"
+            enemy[enemyCounter].name = "enemy"..temp
             enemy[enemyCounter].xScale = 3
             enemy[enemyCounter].yScale = 3
             enemy[enemyCounter].gravityScale = -30
@@ -341,26 +401,90 @@ function scene:create( event )
         -- end
     end
 
+    local function enemyHit(x,y)
+        audio.play(_ENEMYHIT)
+
+        poof = display.newSprite(poofSheet, poofSequenceData)
+            poof.x = x
+            poof.y = y
+            sceneGroup:insert(poof)
+        poof:setSequence("puff")
+        poof:play()
+
+        local function removePoof()
+            if(poof~=nil) then 
+                display.remove(poof)
+            end
+        end
+        timer.performWithDelay(255, removePoof, 1)
+    end
+
+    local function castleHit(x,y)
+        audio.play(_ENEMYHIT)
+
+        poof_collision = display.newSprite(collisionSheet, collisionSequenceData)
+        poof_collision.x = x
+        poof_collision.y = y
+        sceneGroup:insert(poof_collision)
+        poof_collision:setSequence("puff_collision")
+        poof_collision:play()
+
+        local function removePoofCollision()
+            if(poof_collision~=nil) then 
+                display.remove(poof_collision)
+            end
+        end
+        timer.performWithDelay(255, removePoofCollision, 1)
+    end
+
     local function onCollision(event)
 
         local function removeOnEnemyHit(obj1, obj2)
-            print("testando5") 
             display.remove(obj1)
             display.remove(obj2)
-        end
+            user.arrowQtd =  user.arrowQtd + user.arrowRecovered
+            if(user.arrowQtd > 30) then
+                user.arrowQtd = 30
+            end
+            loadsave.saveTable(user, "user.json")
+            countArrowText()
+            if(obj1.id == "enemy") then 
+                enemyHit(event.object1.x, event.object1.y)
+                if(obj1.name == "enemy1") then
+                    user.xp = user.xp + user.orc1Xp
+                    loadsave.saveTable(user, "user.json")
+                    countScoreText()
+                elseif(obj1.name == "enemy2") then
 
-        local function showPlayerHit()
-            player:setSequence("hurt")
-            player:play()
-            player.alpha = 0.5
-            local tmr_onPlayerHit = timer.performWithDelay(100, playerHit, 1)
+                else
+
+                end
+            else
+                enemyHit(event.object2.x, event.object2.y)
+                if(obj2.name == "enemy1") then
+                    user.xp = user.xp + user.orc1Xp
+                    loadsave.saveTable(user, "user.json")
+                    countScoreText()
+                elseif(obj2.name == "enemy2") then
+
+                else
+
+                end
+            end
         end
 
         local function removeOnPlayerHit(obj1, obj2)
-            if(obj1 ~= nil and obj1.id == "enemy") then 
+            if(obj1 ~= nil and obj1.id == "enemy") then
+                print(1)
+                castleHit(event.object1.x+80, event.object1.y)
+                enemyHit(event.object1.x, event.object1.y)
+                castleLife(200)
                 display.remove(obj1)
             end
             if(obj2 ~= nil and obj2.id == "enemy") then
+                print(2)
+                castleHit(event.object2.x+80, event.object2.y)
+                enemyHit(event.object2.x, event.object2.y)
                 castleLife(900)
                 display.remove(obj2)
             end
@@ -375,14 +499,12 @@ function scene:create( event )
         if((event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")) then 
             removeOnEnemyHit(event.object1, event.object2)
         elseif(event.object1.id == "enemy" and event.object2.id == "castelo") then 
-            --showPlayerHit()
             evento = event.object1
             enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
             transition.cancel()
             enemy[enemyCounter]:setSequence("attack")
             enemy[enemyCounter]:play()
         elseif(event.object1.id == "castelo" and event.object2.id == "enemy") then 
-            --showPlayerHit()
             evento = event.object2
             enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
             transition.cancel()
@@ -401,6 +523,7 @@ function scene:create( event )
         bullets[bulletCounter].x = player.x  
         bullets[bulletCounter].y = player.y
         bullets[bulletCounter].id = "bullet"
+        sceneGroup:insert(bullets[bulletCounter])
         physics.addBody(bullets[bulletCounter],'dynamic',{density = 20.0, bounce = 0.2, radius=4})
         bullets[bulletCounter].isSensor = true
         local vx, vy = (event.x-event.xStart)*-1, (event.y-event.yStart)*-1
@@ -414,12 +537,21 @@ function scene:create( event )
             display.remove(self)
             user.arrowQtd =  user.arrowQtd - 1
             loadsave.saveTable(user, "user.json")
+            countArrowText()
         end
     end
 
     
     local function enterFrame( )
         forceMultiplier = forceMultiplier * perFrameDelta
+        if(forceMultiplier >=1 and forceMultiplier <=2) then
+            line:setStrokeColor(0,255,0)
+        elseif(forceMultiplier > 2 and forceMultiplier <= 3) then
+            line:setStrokeColor(255,255,0)
+        elseif(forceMultiplier > 3) then
+            line:setStrokeColor(255,0,0)
+        end
+        print(forceMultiplier)
         if( lastEvent ) then
             updatePrediction(lastEvent)
         end
@@ -433,11 +565,14 @@ function scene:create( event )
                     forceMultiplier = intialForceMultiplier --MOD
                     Runtime:addEventListener( "enterFrame", enterFrame ) --MOD
                     line = display.newLine( eventX, eventY, eventX, eventY )
-                    line.strokeWidth = 4 ; line.alpha = 0.6  --MOD
+                    line.strokeWidth = 8
+                    line.alpha = 0.6  --MOD 
                 elseif(event.phase == "moved") then
                     display.remove( line )
                     line = display.newLine( event.xStart, event.yStart, eventX, eventY )
-                    line.strokeWidth = 4 ; line.alpha = 0.6 --MOD
+                    line.strokeWidth = 8  
+                    line.alpha = 0.6 --MOD
+                    line:setStrokeColor(0,255,0)
                     updatePrediction( event )
                 else 
                     display.remove( line )
@@ -449,6 +584,14 @@ function scene:create( event )
             
         return true
     end
+  
+    local function spriteListener( event )
+        if(event.phase == "ended" and event.target.sequence == "shooting" ) then
+            stop()
+        elseif (player.frame == 8 and event.target.sequence == "shooting" ) then
+            shoot(evento)
+        end
+    end
 
     function onGameOver()
         audio.play(_GAMEOVER)
@@ -456,12 +599,25 @@ function scene:create( event )
         -- if(tmr_playershoot) then 
         --     timer.cancel(tmr_playershoot)
         -- end 
+        player:removeEventListener( "sprite", spriteListener )
         Runtime:removeEventListener( "touch", playerShoot)
         Runtime:removeEventListener("enterFrame", sendEnemies)
         Runtime:removeEventListener("collision", onCollision)
         Runtime:removeEventListener( "enterFrame", verificaTotalDeFlechas)
 
         transition.pause()
+
+        display.remove(player)
+        --display.remove(castelo2)
+        display.remove(healthBar)
+        display.remove(damageBar)
+        display.remove(nameBar)
+        display.remove(myText)
+        display.remove(life)
+        display.remove(lifeBar)
+        display.remove(circle)
+        display.remove(qtdArrow)
+        display.remove(textArrow)
 
         -- for i=1,#lane do
         --     lane[i]:removeEventListener("touch", onLaneTouch)
@@ -473,61 +629,69 @@ function scene:create( event )
             end
         end 
 
-        gameoverBackground = display.newRect(sceneGroup, 0, 0, 1920, 1080)
-        
-            castelo3.isVisible = true
+        castelo3 = display.newImageRect(sceneGroup, "image/cenarios/castelo_destroy.png", 800, 555)
+        castelo3.x = _R * 0.9
+        castelo3.y = _B * 0.728
+        castelo3.xScale = 2
+        castelo3.yScale = 1.8
+        sceneGroup:insert(castelo3)
+        castelo3.isVisible = true
 
-            gameoverBackground.x = _CX
-            gameoverBackground.y = _CY
-            gameoverBackground.xScale = 2
-            gameoverBackground.yScale = 2
-            gameoverBackground:setFillColor(0)
-            gameoverBackground.alpha = 0.6
+        gameoverBackground = display.newRect(sceneGroup, 0, 0, 1920, 1080)
+        display.remove(castelo)
+        -- castelo.width = 800
+        -- castelo.height = 700
+        -- castelo.x = _R * 0.9
+        -- castelo.y = _B - 50
+        -- castelo.xScale = 0.9
+        -- castelo.yScale = 0.9
+        -- castelo:setSequence("destroy")
+        -- castelo:play()
+
+
+        gameoverBackground.x = _CX
+        gameoverBackground.y = _CY
+        gameoverBackground.xScale = 2
+        gameoverBackground.yScale = 2
+        gameoverBackground:setFillColor(0)
+        gameoverBackground.alpha = 0.6
 
         gameOverBox = display.newImageRect(sceneGroup, "image/cenarios/game_over.png",1200, 300)
             gameOverBox.x = _CX 
             gameOverBox.y = _CY*0.6
   
 
-        btn_Continue = widget.newButton {
-            width = 480,
-            height = 200,
-            label = "CONTINUE",
-            labelColor = { default={ 255, 255, 255 } },
-            font = native.newFont( "Augusta"),
-            fontSize = 72,
-            defaultFile = "image/cenarios/buttonDefault3.png",
-            overFile = "image/cenarios/buttonOver.png",
-            --onEvent = returnToMenu
-        }
-        btn_Continue.x = _CX
-        btn_Continue.y =  _CY / 0.8
-        sceneGroup:insert(btn_Continue)
+        if(user.continue > 0 ) then    
+            btn_Continue = widget.newButton {
+                width = 520,
+                height = 200,
+                label = "CONTINUE x "..user.continue,
+                labelColor = { default={ 255, 255, 255 } },
+                font = native.newFont( "Augusta"),
+                fontSize = 64,
+                defaultFile = "image/cenarios/buttonDefault.png",
+                overFile = "image/cenarios/buttonOver.png",
+                onEvent = restartGame
+            }
+            btn_Continue.x = _CX
+            btn_Continue.y =  _CY / 0.8
+            sceneGroup:insert(btn_Continue)
+        end
 
         btn_returnToMenu = widget.newButton {
-            width = 480,
+            width = 520,
             height = 200,
             label = "MENU",
             labelColor = { default={ 255, 255, 255 } },
             font = native.newFont( "Augusta"),
-            fontSize = 72,
-            defaultFile = "image/cenarios/buttonDefault3.png",
+            fontSize = 64,
+            defaultFile = "image/cenarios/buttonDefault.png",
             overFile = "image/cenarios/buttonOver.png",
             onEvent = returnToMenu
         }
         btn_returnToMenu.x = _CX
         btn_returnToMenu.y =  _CY / 0.65
         sceneGroup:insert(btn_returnToMenu)
-    end
-
-    
-    local function spriteListener( event )
-        if(event.phase == "ended" and event.target.sequence == "shooting" ) then
-            stop()
-        elseif (player.frame == 8 and event.target.sequence == "shooting" ) then
-            print(user.arrowQtd)
-            shoot(evento)
-        end
     end
 
     -- Add sprite listener

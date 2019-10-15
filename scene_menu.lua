@@ -123,7 +123,6 @@ function scene:create( event )
     moveNaoki = transition.to(naoki, {x=_CX - 350, time=750, delay=250})
     moveOrc = transition.to(orc, {x=_CX - 1250, time=750, delay=250})
 
-    print(user.castleLife)
 end
 
 
@@ -149,9 +148,10 @@ function scene:show( event )
                 user = {}
                 user.continue = 3
                 user.arrowRecovered = 5
-                user.arrowQtd = 10
+                user.arrowDefault = 10
                 user.arrowQtdLevel = 1
                 user.arrowQtdLevelMax = 3
+                user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
                 user.arrowDamage = 100
                 user.arrowDamageLevel = 1
                 user.arrowDamageLevelMax = 3

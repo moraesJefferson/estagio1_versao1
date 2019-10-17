@@ -234,8 +234,8 @@ function scene:create( event )
     player.y = _CY / 0.82
     player.force = 0
     player.id = "player_shoot"
-    player.xScale = 2.5
-    player.yScale = 2.5
+    player.xScale = 3
+    player.yScale = 3
     sceneGroup:insert(player)
     --physics.addBody(player,'static',{bounce=0.0})
     player:setSequence("stop")
@@ -351,8 +351,8 @@ function scene:create( event )
             enemy[enemyCounter].y = lane[1].y-75
             enemy[enemyCounter].id = "enemy"
             enemy[enemyCounter].name = "enemy"..temp
-            enemy[enemyCounter].xScale = 3
-            enemy[enemyCounter].yScale = 3
+            enemy[enemyCounter].xScale = 4
+            enemy[enemyCounter].yScale = 4
             enemy[enemyCounter].gravityScale = -30
             physics.addBody(enemy[enemyCounter],'kinematic',{isSensor=true,radius = 80,bounce=0.0,friction=0.0})
             enemy[enemyCounter].isFixedRotation = true 
@@ -485,7 +485,7 @@ function scene:create( event )
                 print(2)
                 castleHit(event.object2.x+80, event.object2.y)
                 enemyHit(event.object2.x, event.object2.y)
-                castleLife(900)
+                castleLife(200)
                 display.remove(obj2)
             end
         end
@@ -516,21 +516,26 @@ function scene:create( event )
 
 
     local function shoot(event)
-        audio.play(_THROW)
+        if(evento.xStart ~= nil and evento.yStart ~= nil) then
+            audio.play(_THROW)
 
-        bulletCounter = bulletCounter + 1
-        bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
-        bullets[bulletCounter].x = player.x  
-        bullets[bulletCounter].y = player.y
-        bullets[bulletCounter].id = "bullet"
-        sceneGroup:insert(bullets[bulletCounter])
-        physics.addBody(bullets[bulletCounter],'dynamic',{density = 20.0, bounce = 0.2, radius=4})
-        bullets[bulletCounter].isSensor = true
-        local vx, vy = (event.x-event.xStart)*-1, (event.y-event.yStart)*-1
-        bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
-        bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
-        bullets[bulletCounter].angularVelocity = -40
-        bullets[bulletCounter].gravityScale = 2
+            bulletCounter = bulletCounter + 1
+            bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
+            bullets[bulletCounter].x = player.x  
+            bullets[bulletCounter].y = player.y
+            bullets[bulletCounter].xScale = 2
+            bullets[bulletCounter].yScale = 2
+            bullets[bulletCounter]:setStrokeColor(0,0,0)
+            bullets[bulletCounter].id = "bullet"
+            --sceneGroup:insert(bullets[bulletCounter])
+            physics.addBody(bullets[bulletCounter],'dynamic',{density = 30.0, bounce = 0.2, radius=4})
+            bullets[bulletCounter].isSensor = true
+            local vx, vy = (evento.x-evento.xStart)*-1, (evento.y-evento.yStart)*-1
+            bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
+            bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
+            bullets[bulletCounter].angularVelocity = -40
+            bullets[bulletCounter].gravityScale = 2
+        end
 
 
         if(self~=nil) then 
@@ -544,11 +549,11 @@ function scene:create( event )
     
     local function enterFrame( )
         forceMultiplier = forceMultiplier * perFrameDelta
-        if(forceMultiplier >=1 and forceMultiplier <=2) then
+        if(forceMultiplier >=1 and forceMultiplier <=1.25) then
             line:setStrokeColor(0,255,0)
-        elseif(forceMultiplier > 2 and forceMultiplier <= 3) then
+        elseif(forceMultiplier > 1.25 and forceMultiplier <= 1.75) then
             line:setStrokeColor(255,255,0)
-        elseif(forceMultiplier > 3) then
+        elseif(forceMultiplier > 1.75) then
             line:setStrokeColor(255,0,0)
         end
         print(forceMultiplier)
@@ -561,22 +566,22 @@ function scene:create( event )
         evento = event
             local eventX, eventY = event.x, event.y
            
-                if ( event.phase == "began" ) then
+                if ( evento.phase == "began" ) then
                     forceMultiplier = intialForceMultiplier --MOD
                     Runtime:addEventListener( "enterFrame", enterFrame ) --MOD
                     line = display.newLine( eventX, eventY, eventX, eventY )
                     line.strokeWidth = 8
                     line.alpha = 0.6  --MOD 
-                elseif(event.phase == "moved") then
+                elseif(evento.phase == "moved") then
                     display.remove( line )
-                    line = display.newLine( event.xStart, event.yStart, eventX, eventY )
+                    line = display.newLine( evento.xStart, evento.yStart, eventX, eventY )
                     line.strokeWidth = 8  
                     line.alpha = 0.6 --MOD
                     line:setStrokeColor(0,255,0)
-                    updatePrediction( event )
+                    updatePrediction( evento )
                 else 
                     display.remove( line )
-                    updatePrediction( event )
+                    updatePrediction( evento )
                     player:setSequence("shooting")
                     player:play()
                     Runtime:removeEventListener( "enterFrame", enterFrame )   
@@ -618,6 +623,7 @@ function scene:create( event )
         display.remove(circle)
         display.remove(qtdArrow)
         display.remove(textArrow)
+        display.remove(textScore)
 
         -- for i=1,#lane do
         --     lane[i]:removeEventListener("touch", onLaneTouch)

@@ -66,17 +66,17 @@ function scene:create( event )
    -- local gameTitle = display.newImageRect(sceneGroup, "image/menu/title.png", 508, 210)
        -- gameTitle.x = _CX; gameTitle.y = _CH * 0.2
 
-    local naoki = display.newImageRect(sceneGroup, "image/menu/naoki.png", 140, 100)
+    local naoki = display.newImageRect(sceneGroup, "image/menu/naoki.png", 100, 74)
         naoki.x = _L - naoki.width; 
-        naoki.y = _CH * 0.935;
-        naoki.xScale = 1.8
-        naoki.yScale = 1.8
+        naoki.y = _CH * 0.92;
+        naoki.xScale = 3
+        naoki.yScale = 3
 
-    local orc = display.newImageRect(sceneGroup, "image/menu/orc1.png", 90, 100)
+    local orc = display.newImageRect(sceneGroup, "image/menu/orc1.png", 77, 61)
         orc.x = _R + orc.width; 
-        orc.y = _CH * 0.93;
-        orc.xScale = 2
-        orc.yScale = 2
+        orc.y = _CH * 0.92;
+        orc.xScale = 3
+        orc.yScale = 3
 
 
     -- Create some buttons
@@ -139,8 +139,6 @@ function scene:show( event )
         -- Insert code here to make the scene come alive.
         -- Example: start timers, begin animation, play audio, etc.
 
-        audio.play(_BACKGROUNDMUSIC,{loops=-1, fadein=2500})
-
         local cenaAnterior = composer.getSceneName("previous")
         if(cenaAnterior) then
             composer.removeScene(cenaAnterior)
@@ -173,8 +171,13 @@ function scene:show( event )
                 user.orcGiantXp = 250
                 user.playsound = true
                 user.exitMenu = false
-                loadsave.saveTable(user, "user.json")
+                loadsave.saveTable(user, "user.json")           
             end
+            audio.stop(2)
+            audio.rewind()
+            audio.play(_MENU,{channel = 1,loops=-1, fadein=2500})
+        else
+            audio.play(_MENU,{channel = 1,loops=-1, fadein=2500})
         end
 
     end

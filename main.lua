@@ -34,6 +34,8 @@ _ENEMYHIT = audio.loadSound("audio/enemy-hit.wav")
 _PLAYERHIT = audio.loadSound("audio/player-hit.mp3")
 _GAMEOVER = audio.loadSound("audio/game-over.wav")
 _CLICK = audio.loadSound("audio/click.mp3")
+_MENU = audio.loadStream("audio/Fantasy_Game.mp3")
+_JOGO = audio.loadStream("audio/Tower-Defense.mp3")
 
 -- set up a saved file for our user
 user = loadsave.loadTable("user.json")

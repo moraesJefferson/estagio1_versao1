@@ -142,44 +142,11 @@ function scene:show( event )
         local cenaAnterior = composer.getSceneName("previous")
         if(cenaAnterior) then
             composer.removeScene(cenaAnterior)
-            if(user.continue == 0 or user.exitMenu == true) then 
-                user = {}
-                user.continue = 3
-                user.arrowRecovered = 5
-                user.arrowDefault = 10
-                user.arrowQtdLevel = 1
-                user.arrowQtdLevelMax = 3
-                user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
-                user.arrowDamage = 100
-                user.arrowDamageLevel = 1
-                user.arrowDamageLevelMax = 3
-                user.castleLife = 900
-                user.castleLifeLevel = 1
-                user.castleLifeLevelMax = 3
-                user.orc1Damage = 90
-                user.orc2Damage = 105
-                user.orc3Damage = 120
-                user.orcGiantDamage = 180
-                user.orc1Life = 100
-                user.orc2Life = 120
-                user.orc3Life = 150
-                user.orcGiantLife = 300
-                user.xp = 0
-                user.orc1Xp = 25
-                user.orc2Xp = 50
-                user.orc3Xp = 100
-                user.orcGiantXp = 250
-                user.playsound = true
-                user.exitMenu = false
-                loadsave.saveTable(user, "user.json")           
-            end
-            audio.stop(2)
-            audio.rewind()
-            audio.play(_MENU,{channel = 1,loops=-1, fadein=2500})
-        else
-            audio.play(_MENU,{channel = 1,loops=-1, fadein=2500})
         end
-
+        audio.stop(2)
+        audio.rewind()
+        audio.rewind(_MENU)
+        audio.play(_MENU,{channel = 1,loops=-1, fadein=2500})
     end
 end
 

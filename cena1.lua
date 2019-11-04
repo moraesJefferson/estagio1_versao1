@@ -29,13 +29,13 @@ local castleSequenceData = {
     {name="destroy", start=3, count=1, time=1000, loopCount=0}
 }
 
-local orcSheetData = {width=77, height=61, numFrames=13, sheetContentWidth=1001, sheetContentHeight=61}
+local orcSheetData = {width=77, height=61, numFrames=14, sheetContentWidth=1078, sheetContentHeight=61}
 local orcSheet1 = graphics.newImageSheet("image/spriteSheet/orc1_sprite.png", orcSheetData)
---local pirateSheet2 = graphics.newImageSheet("images/characters/pirate2.png", pirateSheetData)
---local pirateSheet3 = graphics.newImageSheet("images/characters/pirate3.png", pirateSheetData)
+local orcSheet2 = graphics.newImageSheet("image/spriteSheet/orc2_sprite.png", orcSheetData)
+local orcSheet3 = graphics.newImageSheet("image/spriteSheet/orc3_sprite.png", orcSheetData)
 local orcSequenceData = {
     {name="attack", start=1, count=7, time=575, loopCount=0},
-    {name="run", start=8, count=5, time=575, loopCount=0}
+    {name="run", start=8, count=7, time=575, loopCount=0}
 }
 
 local poofSheetData = {width=165, height=180, numFrames=5, sheetContentWidth=825, sheetContentHeight=180}
@@ -56,7 +56,7 @@ local collisionSequenceData = {
 -- local forward references should go here
 
 -- Create display group for predicted trajectory
-local T
+local textP1,textP2,textP3
 local evento
 local teste = false
 local line
@@ -109,33 +109,82 @@ function scene:create( event )
 
     -- Initialize the scene here.
     -- Example: add display objects to "sceneGroup", add touch listeners, etc.
+
+    local function deleteRanking()
+        display.remove(textP1)
+        display.remove(textP2)
+        display.remove(textP3)
+    end
+
     local function returnToMenu(event)
         if(event.phase == "ended") then 
             audio.play(_CLICK)
-            user.exitMenu = true
-	        loadsave.saveTable(user, "user.json")
-            composer.gotoScene("scene_menu", "slideRight")
+            user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
+            user.xp = 0
+            loadsave.saveTable(user, "user.json")
+            deleteRanking()
+            composer.removeScene( "cena1",false )
+            composer.gotoScene("scene_menu", "slideLeft")
         end 
     end
 
     local function restartGame(event)
         if(event.phase == "ended") then 
             audio.play(_CLICK)
-            user.continue = user.continue - 1
             user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
+            user.xp = 0
             loadsave.saveTable(user, "user.json")
+            deleteRanking()
             composer.removeScene( "cena1",false )
             composer.gotoScene("cena1", "slideRight")
         end
     end
 
+    local function atualizaScore()
+        local score = 0
+        if(user.xp >= user.position1) then
+            score = user.position1
+            user.position1 = user.xp
+            user.position3 = user.position2
+            user.position2 = score
+        elseif(user.xp < user.position1 and user.xp >= user.position2) then
+            score = user.position2
+            user.position2 = user.xp
+            user.position3 = score
+        else
+            user.position3 = user.xp
+        end
+        loadsave.saveTable(user, "user.json")
+    end
+
+    local function mostraRanking()
+
+        if(user.position1 == 0)then
+            textP1 = display.newText("1) -- : -- ", _CX, _CY*0.7, native.newFont( "Augusta"), 90 )
+        else
+            textP1 = display.newText("1) "..tostring(user.position1).." XP", _CX, _CY*0.7, native.newFont( "Augusta"), 90 )
+        end
+
+        if(user.position2 == 0)then
+            textP2 = display.newText("2) -- : -- ", _CX, _CY*0.9, native.newFont( "Augusta"), 90 )
+        else
+            textP2 = display.newText("2) "..tostring(user.position2).." XP", _CX, _CY*0.9, native.newFont( "Augusta"), 90 )
+        end
+
+        if(user.position3 == 0)then
+            textP3 = display.newText("3) -- : -- ", _CX, _CY/0.9, native.newFont( "Augusta"), 90 )
+        else
+            textP3 = display.newText("3) "..tostring(user.position3).." XP", _CX, _CY/0.9, native.newFont( "Augusta"), 90 )
+        end
+
+        textP1:setFillColor( 255, 255, 255 )
+        textP2:setFillColor( 255, 255, 255 )
+        textP3:setFillColor( 255, 255, 255 )
+    end
+
     local function verificaTotalDeFlechas(event)
         if(user.arrowQtd == 0) then
-            if(castelo.isVisible == true) then
-                display.remove(castelo)
-            elseif(castelo2.isVisible == true) then
-                display.remove(castelo2)
-            end
+            display.remove(castelo)
             display.remove(player)
             display.remove(healthBar)
             display.remove(damageBar)
@@ -183,38 +232,7 @@ function scene:create( event )
     rect1:setStrokeColor(0)
     physics.addBody(rect1,'static',{bounce=0.0,friction=0.0})
 
-    -- castelo = display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
-    -- castelo.id = "castelo"
-    -- castelo.name = "castelo"
-    -- castelo.x = _R * 0.9
-    -- castelo.y = _B * 0.63
-    -- castelo.xScale = 2
-    -- castelo.yScale = 2
-    -- sceneGroup:insert(castelo)
-    -- physics.addBody(castelo,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    -- castelo2 = display.newImageRect(sceneGroup, "image/cenarios/castelo_inAttack.png", 800, 700)
-    -- castelo2.x = _R * 0.9
-    -- castelo2.y = _B * 0.63
-    -- castelo2.xScale = 2
-    -- castelo2.yScale = 2
-    -- sceneGroup:insert(castelo2)
-    -- physics.addBody(castelo2,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    -- castelo3 = display.newImageRect(sceneGroup, "image/cenarios/castelo_destroy.png", 800, 555)
-    -- castelo3.x = _R * 0.9
-    -- castelo3.y = _B * 0.735
-    -- castelo3.xScale = 1.9
-    -- castelo3.yScale = 1.8
-    -- sceneGroup:insert(castelo3)
-    -- --physics.addBody(castelo3,'dynamic',{isSensor= false,radius=770,density=500.0,bounce=0.0,friction=0.3})
-
-    -- castelo.isVisible = true
-    -- castelo2.isVisible = false
-    -- castelo3.isVisible = false
-
     castelo = display.newSprite(castleSheet, castleSequenceData)
-    --display.newImageRect(sceneGroup, "image/cenarios/castelo.png", 800, 700)
     castelo.id = "castelo"
     castelo.name = "castelo"
     castelo.width = 800
@@ -237,7 +255,6 @@ function scene:create( event )
     player.xScale = 3
     player.yScale = 3
     sceneGroup:insert(player)
-    --physics.addBody(player,'static',{bounce=0.0})
     player:setSequence("stop")
     player:play()
     player.isVisible = true;
@@ -303,15 +320,10 @@ function scene:create( event )
         local closure = function(damageTaken)
             currentHealth = currentHealth - damageTaken
             if(currentHealth  <= 600 and currentHealth > 0) then
-                -- castelo.isVisible = false
-                -- castelo2.isVisible = true
-                -- display.remove(castelo)
-                -- castelo2.id = "castelo"
-                -- castelo2.name = "castelo"
                 castelo:setSequence("on_attack")
                 castelo:play()
             elseif(currentHealth <= 0) then
-                timer.performWithDelay( 1000, onGameOver )
+                timer.performWithDelay( 300, onGameOver )
             end
             updateDamageBar()
         end
@@ -337,23 +349,22 @@ function scene:create( event )
                 enemySendSpeed = enemyMaxSendSpeed
             end
 
-            --temp = math.random(1,3)
-            temp = 1
-            --if(temp == 1) then 
+            temp = math.random(1,3)
+           -- temp = 1
+            if(temp == 1) then 
                 enemy[enemyCounter] = display.newSprite(orcSheet1, orcSequenceData)
-            --elseif(temp == 2) then 
-               --- enemy[enemyCounter] = display.newSprite(pirateSheet2, pirateSequenceData)
-            --else 
-               -- enemy[enemyCounter] = display.newSprite(pirateSheet3, pirateSequenceData)
-            --end
+            elseif(temp == 2) then 
+                enemy[enemyCounter] = display.newSprite(orcSheet2, orcSequenceData)
+            else 
+                enemy[enemyCounter] = display.newSprite(orcSheet3, orcSequenceData)
+            end
 
             enemy[enemyCounter].x = _L - 50
             enemy[enemyCounter].y = lane[1].y-75
             enemy[enemyCounter].id = "enemy"
             enemy[enemyCounter].name = "enemy"..temp
-            enemy[enemyCounter].xScale = 4
-            enemy[enemyCounter].yScale = 4
-            enemy[enemyCounter].gravityScale = -30
+            enemy[enemyCounter].xScale = 3
+            enemy[enemyCounter].yScale = 3
             physics.addBody(enemy[enemyCounter],'kinematic',{isSensor=true,radius = 80,bounce=0.0,friction=0.0})
             enemy[enemyCounter].isFixedRotation = true 
             sceneGroup:insert(enemy[enemyCounter])
@@ -393,12 +404,6 @@ function scene:create( event )
 
         startingVelocity.x = startingVelocity.x * forceMultiplier --MOD
         startingVelocity.y = startingVelocity.y * forceMultiplier --MOD
-
-        -- for i = 1,-240,-1 do
-        --     local s = { x=event.xStart, y=event.yStart }
-        --     local trajectoryPosition = getTrajectoryPoint( s, startingVelocity, i )
-        --     local dot = display.newCircle( predictedPath, trajectoryPosition.x, trajectoryPosition.y, 6 )
-        -- end
     end
 
     local function enemyHit(x,y)
@@ -452,37 +457,35 @@ function scene:create( event )
                 enemyHit(event.object1.x, event.object1.y)
                 if(obj1.name == "enemy1") then
                     user.xp = user.xp + user.orc1Xp
-                    loadsave.saveTable(user, "user.json")
-                    countScoreText()
                 elseif(obj1.name == "enemy2") then
-
+                    user.xp = user.xp + user.orc2Xp
                 else
-
+                    user.xp = user.xp + user.orc3Xp
                 end
+                loadsave.saveTable(user, "user.json")
+                countScoreText()
             else
                 enemyHit(event.object2.x, event.object2.y)
                 if(obj2.name == "enemy1") then
                     user.xp = user.xp + user.orc1Xp
-                    loadsave.saveTable(user, "user.json")
-                    countScoreText()
                 elseif(obj2.name == "enemy2") then
-
+                    user.xp = user.xp + user.orc2Xp
                 else
-
+                    user.xp = user.xp + user.orc3Xp
                 end
+                loadsave.saveTable(user, "user.json")
+                countScoreText()
             end
         end
 
         local function removeOnPlayerHit(obj1, obj2)
             if(obj1 ~= nil and obj1.id == "enemy") then
-                print(1)
                 castleHit(event.object1.x+80, event.object1.y)
                 enemyHit(event.object1.x, event.object1.y)
                 castleLife(200)
                 display.remove(obj1)
             end
             if(obj2 ~= nil and obj2.id == "enemy") then
-                print(2)
                 castleHit(event.object2.x+80, event.object2.y)
                 enemyHit(event.object2.x, event.object2.y)
                 castleLife(200)
@@ -527,7 +530,6 @@ function scene:create( event )
             bullets[bulletCounter].yScale = 2
             bullets[bulletCounter]:setStrokeColor(0,0,0)
             bullets[bulletCounter].id = "bullet"
-            --sceneGroup:insert(bullets[bulletCounter])
             physics.addBody(bullets[bulletCounter],'dynamic',{density = 30.0, bounce = 0.2, radius=4})
             bullets[bulletCounter].isSensor = true
             local vx, vy = (evento.x-evento.xStart)*-1, (evento.y-evento.yStart)*-1
@@ -556,7 +558,6 @@ function scene:create( event )
         elseif(forceMultiplier > 1.75) then
             line:setStrokeColor(255,0,0)
         end
-        print(forceMultiplier)
         if( lastEvent ) then
             updatePrediction(lastEvent)
         end
@@ -600,6 +601,7 @@ function scene:create( event )
 
     function onGameOver()
         audio.play(_GAMEOVER)
+        atualizaScore()
 
         -- if(tmr_playershoot) then 
         --     timer.cancel(tmr_playershoot)
@@ -613,7 +615,6 @@ function scene:create( event )
         transition.pause()
 
         display.remove(player)
-        --display.remove(castelo2)
         display.remove(healthBar)
         display.remove(damageBar)
         display.remove(nameBar)
@@ -645,15 +646,6 @@ function scene:create( event )
 
         gameoverBackground = display.newRect(sceneGroup, 0, 0, 1920, 1080)
         display.remove(castelo)
-        -- castelo.width = 800
-        -- castelo.height = 700
-        -- castelo.x = _R * 0.9
-        -- castelo.y = _B - 50
-        -- castelo.xScale = 0.9
-        -- castelo.yScale = 0.9
-        -- castelo:setSequence("destroy")
-        -- castelo:play()
-
 
         gameoverBackground.x = _CX
         gameoverBackground.y = _CY
@@ -664,14 +656,14 @@ function scene:create( event )
 
         gameOverBox = display.newImageRect(sceneGroup, "image/cenarios/game_over.png",1200, 300)
             gameOverBox.x = _CX 
-            gameOverBox.y = _CY*0.6
+            gameOverBox.y = _CY*0.3
   
+        mostraRanking()
 
-        if(user.continue > 0 ) then    
             btn_Continue = widget.newButton {
                 width = 520,
                 height = 200,
-                label = "CONTINUE x "..user.continue,
+                label = "CONTINUE",
                 labelColor = { default={ 255, 255, 255 } },
                 font = native.newFont( "Augusta"),
                 fontSize = 64,
@@ -679,10 +671,9 @@ function scene:create( event )
                 overFile = "image/cenarios/buttonOver.png",
                 onEvent = restartGame
             }
-            btn_Continue.x = _CX
-            btn_Continue.y =  _CY / 0.8
+            btn_Continue.x = _CX - 400
+            btn_Continue.y =  _CY / 0.55
             sceneGroup:insert(btn_Continue)
-        end
 
         btn_returnToMenu = widget.newButton {
             width = 520,
@@ -695,8 +686,8 @@ function scene:create( event )
             overFile = "image/cenarios/buttonOver.png",
             onEvent = returnToMenu
         }
-        btn_returnToMenu.x = _CX
-        btn_returnToMenu.y =  _CY / 0.65
+        btn_returnToMenu.x = _CX + 400
+        btn_returnToMenu.y =  _CY / 0.55
         sceneGroup:insert(btn_returnToMenu)
     end
 
@@ -724,7 +715,7 @@ function scene:show( event )
             composer.removeScene(cenaAnterior)
         end
         audio.stop(1)
-        audio.rewind()
+        audio.rewind(_JOGO)
         audio.play(_JOGO,{channel = 2,loops=-1, fadein=2500})
         -- Called when the scene is now on screen.
         -- Insert code here to make the scene come alive.

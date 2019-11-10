@@ -69,6 +69,7 @@ if(user == nil) then
     loadsave.saveTable(user, "user.json")
 else
     user.arrowQtd = user.arrowDefault * user.arrowQtdLevel
+    user.xp = 0
     loadsave.saveTable(user, "user.json")
 end
 

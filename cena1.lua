@@ -188,8 +188,6 @@ function scene:create( event )
             display.remove(player)
             display.remove(healthBar)
             display.remove(damageBar)
-            display.remove(nameBar)
-            display.remove(myText)
             display.remove(life)
             display.remove(lifeBar)
             display.remove(circle)
@@ -277,29 +275,29 @@ function scene:create( event )
         local maxHealth = 900
         local currentHealth = 900
 
-        healthBar = display.newRoundedRect(_R * 0.6 + 180, 150, user.castleLife, 60,60)
-        healthBar:setFillColor( 0, 0, 0 )
+        healthBar = display.newRect(sceneGroup,_R * 0.595 + 190, 185, user.castleLife, 60)
+        healthBar.strokeWidth = 3
+        healthBar:setFillColor( 0, 255, 0 )
+        healthBar:setStrokeColor( 0, 0, 0 )
+        healthBar.path.x1 = 30
 
-        damageBar = display.newRoundedRect(_R * 0.6 + 180 , 150, 0, 60,30)
-        damageBar:setFillColor( 255, 0, 0 )
-
-        nameBar = display.newRoundedRect(_R * 0.83, 89, 500, 60,7)
-        nameBar:setFillColor (.50, .50, .50)
-        nameBar.strokeWidth = 5
-        nameBar:setStrokeColor(0,0,0)
-
-        myText = display.newText( "Castle", nameBar.x-50, nameBar.y, native.newFont( "Augusta"), 70 )
-        myText:setFillColor( 255, 255, 255 )
-
-        lifeBar = display.newRoundedRect(_R * 0.8, 211, 550, 60,7)
-        lifeBar:setFillColor (.50, .50, .50)
+        damageBar = display.newRect(sceneGroup,_R * 0.595 + 190 , 185, 0, 60)
+        damageBar:setFillColor( 0, 0, 0 )
+       
+        lifeBar = display.newRect(sceneGroup,_R * 0.8, 245, 349, 45 )
         lifeBar.strokeWidth = 5
-        lifeBar:setStrokeColor(0,0,0)
+        lifeBar:setFillColor( 255,255,255 )
+        lifeBar:setStrokeColor( 255,255,255 )
+        lifeBar.path.x1 = 30
 
-        life = display.newText( tostring(currentHealth).." / "..tostring(maxHealth), lifeBar.x-25, lifeBar.y, native.newFont( "Augusta"), 70 )
-        myText:setFillColor( 255, 255, 255 )
 
-        circle = display.newCircle( _R*0.925, 150, 125 )
+        life = display.newText("CASTLE", lifeBar.x, lifeBar.y, native.newFont( "Augusta"), 58 )
+        life:setFillColor( 0, 0, 0 )
+
+        circle = display.newRect(sceneGroup, _R*0.925, 170, 205, 200 )
+        circle.strokeWidth = 10
+        circle:setFillColor( 0.5 )
+        circle:setStrokeColor( 0, 0, 0 )
 
         local paint = {
             type = "image",
@@ -309,12 +307,18 @@ function scene:create( event )
         circle.fill = paint
 
         local function updateDamageBar()
+
+            if(damageBar.width == 0)then
+                damageBar.strokeWidth = 3
+                damageBar:setStrokeColor( 0, 0, 0 )
+                damageBar.path.x1 = 30
+            end
+
             damageBar.width = maxHealth - currentHealth
             damageBar.x = healthBar.x - (healthBar.width/2 - damageBar.width/2)
             if(currentHealth < 0) then
                 currentHealth = 0
             end
-            life.text = tostring(currentHealth).." / "..tostring(maxHealth)
         end
     
         local closure = function(damageTaken)
@@ -350,7 +354,6 @@ function scene:create( event )
             end
 
             temp = math.random(1,3)
-           -- temp = 1
             if(temp == 1) then 
                 enemy[enemyCounter] = display.newSprite(orcSheet1, orcSequenceData)
             elseif(temp == 2) then 
@@ -447,6 +450,7 @@ function scene:create( event )
         local function removeOnEnemyHit(obj1, obj2)
             display.remove(obj1)
             display.remove(obj2)
+            teste = true
             user.arrowQtd =  user.arrowQtd + user.arrowRecovered
             if(user.arrowQtd > 30) then
                 user.arrowQtd = 30
@@ -518,36 +522,6 @@ function scene:create( event )
     end
 
 
-    local function shoot(event)
-        if(evento.xStart ~= nil and evento.yStart ~= nil) then
-            audio.play(_THROW)
-
-            bulletCounter = bulletCounter + 1
-            bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
-            bullets[bulletCounter].x = player.x  
-            bullets[bulletCounter].y = player.y
-            bullets[bulletCounter].xScale = 2
-            bullets[bulletCounter].yScale = 2
-            bullets[bulletCounter]:setStrokeColor(0,0,0)
-            bullets[bulletCounter].id = "bullet"
-            physics.addBody(bullets[bulletCounter],'dynamic',{density = 30.0, bounce = 0.2, radius=4})
-            bullets[bulletCounter].isSensor = true
-            local vx, vy = (evento.x-evento.xStart)*-1, (evento.y-evento.yStart)*-1
-            bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
-            bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
-            bullets[bulletCounter].angularVelocity = -40
-            bullets[bulletCounter].gravityScale = 2
-        end
-
-
-        if(self~=nil) then 
-            display.remove(self)
-            user.arrowQtd =  user.arrowQtd - 1
-            loadsave.saveTable(user, "user.json")
-            countArrowText()
-        end
-    end
-
     
     local function enterFrame( )
         forceMultiplier = forceMultiplier * perFrameDelta
@@ -585,10 +559,63 @@ function scene:create( event )
                     updatePrediction( evento )
                     player:setSequence("shooting")
                     player:play()
-                    Runtime:removeEventListener( "enterFrame", enterFrame )   
+                    Runtime:removeEventListener( "enterFrame", enterFrame )
+                    Runtime:removeEventListener( "touch", playerShoot)
+
                 end
-            
         return true
+    end
+
+    local function shoot(event)
+        if(evento.xStart ~= nil and evento.yStart ~= nil) then
+            audio.play(_THROW)
+
+            bulletCounter = bulletCounter + 1
+            bullets[bulletCounter] = display.newImageRect(sceneGroup, "image/spriteSheet/Arrow.png", 54, 54)
+            bullets[bulletCounter].x = player.x  
+            bullets[bulletCounter].y = player.y
+            bullets[bulletCounter].xScale = 2
+            bullets[bulletCounter].yScale = 2
+            bullets[bulletCounter]:setStrokeColor(0,0,0)
+            bullets[bulletCounter].id = "bullet"
+            physics.addBody(bullets[bulletCounter],'dynamic',{density = 30.0, bounce = 0.2, radius=4})
+            bullets[bulletCounter].isSensor = true
+            local vx, vy = (evento.x-evento.xStart)*-1, (evento.y-evento.yStart)*-1
+            bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
+            bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
+            bullets[bulletCounter].angularVelocity = -40
+            bullets[bulletCounter].gravityScale = 2
+        end
+
+        local function isArrowInScreen(obj)
+            if( (obj.x - (obj.width/2)) > _R ) then return false end
+            if( (obj.x + (obj.width/2)) < _L) then return false end
+            if( (obj.y + (obj.height/2)) < _T ) then return false end
+            if( (obj.y - (obj.height/2)) > _B ) then return false end
+            return true
+        end
+
+        local function verificaTela()
+            if(teste == true) then
+                Runtime:removeEventListener( "enterFrame", verificaTela)
+                Runtime:addEventListener( "touch", playerShoot)
+                user.arrowQtd =  user.arrowQtd - 1
+                loadsave.saveTable(user, "user.json")
+                countArrowText()
+                teste = false
+            elseif(isArrowInScreen(bullets[bulletCounter]) ~= true) then
+                if( bullets[bulletCounter]~=nil) then 
+                    display.remove( bullets[bulletCounter])
+                    Runtime:removeEventListener( "enterFrame", verificaTela)
+                    user.arrowQtd =  user.arrowQtd - 1
+                    loadsave.saveTable(user, "user.json")
+                    countArrowText()
+                    teste = false
+                end
+                Runtime:addEventListener( "touch", playerShoot)
+            end
+        end
+        Runtime:addEventListener( "enterFrame", verificaTela)
     end
   
     local function spriteListener( event )
@@ -603,9 +630,6 @@ function scene:create( event )
         audio.play(_GAMEOVER)
         atualizaScore()
 
-        -- if(tmr_playershoot) then 
-        --     timer.cancel(tmr_playershoot)
-        -- end 
         player:removeEventListener( "sprite", spriteListener )
         Runtime:removeEventListener( "touch", playerShoot)
         Runtime:removeEventListener("enterFrame", sendEnemies)
@@ -617,18 +641,12 @@ function scene:create( event )
         display.remove(player)
         display.remove(healthBar)
         display.remove(damageBar)
-        display.remove(nameBar)
-        display.remove(myText)
         display.remove(life)
         display.remove(lifeBar)
         display.remove(circle)
         display.remove(qtdArrow)
         display.remove(textArrow)
         display.remove(textScore)
-
-        -- for i=1,#lane do
-        --     lane[i]:removeEventListener("touch", onLaneTouch)
-        -- end
 
         for i=1,#enemy do
             if(enemy[i] ~= nil) then 
@@ -660,32 +678,44 @@ function scene:create( event )
   
         mostraRanking()
 
-            btn_Continue = widget.newButton {
-                width = 520,
-                height = 200,
-                label = "CONTINUE",
-                labelColor = { default={ 255, 255, 255 } },
+        btn_Continue = widget.newButton (
+            {
+                label = "Continue",
+                onEvent = restartGame,
+                emboss = false,
+                -- Properties for a rounded rectangle button
+                shape = "roundedRect",
+                width = 500,
+                height = 240,
+                fillColor = { default={0,1,1,0}, over={0,0,0,0} },
+                strokeColor = { default={0,0,0,0}, over={0,0,0,0} },
+                labelColor = { default={ 1, 1, 1 }, over={ 0, 0, 0, 0 } },
+                strokeWidth = 4,
+                fontSize = 200,
                 font = native.newFont( "Augusta"),
-                fontSize = 64,
-                defaultFile = "image/cenarios/buttonDefault.png",
-                overFile = "image/cenarios/buttonOver.png",
-                onEvent = restartGame
             }
-            btn_Continue.x = _CX - 400
-            btn_Continue.y =  _CY / 0.55
-            sceneGroup:insert(btn_Continue)
+        )
+        btn_Continue.x = _CX - 400
+        btn_Continue.y =  _CY / 0.55
+        sceneGroup:insert(btn_Continue)
 
-        btn_returnToMenu = widget.newButton {
-            width = 520,
-            height = 200,
-            label = "MENU",
-            labelColor = { default={ 255, 255, 255 } },
-            font = native.newFont( "Augusta"),
-            fontSize = 64,
-            defaultFile = "image/cenarios/buttonDefault.png",
-            overFile = "image/cenarios/buttonOver.png",
-            onEvent = returnToMenu
-        }
+        btn_returnToMenu = widget.newButton(
+            {
+                label = "Menu",
+                onEvent = returnToMenu,
+                emboss = false,
+                -- Properties for a rounded rectangle button
+                shape = "roundedRect",
+                width = 500,
+                height = 240,
+                fillColor = { default={0,1,1,0}, over={0,0,0,0} },
+                strokeColor = { default={0,0,0,0}, over={0,0,0,0} },
+                labelColor = { default={ 1, 1, 1 }, over={ 0, 0, 0, 0 } },
+                strokeWidth = 4,
+                fontSize = 200,
+                font = native.newFont( "Augusta"),
+            }
+        )
         btn_returnToMenu.x = _CX + 400
         btn_returnToMenu.y =  _CY / 0.55
         sceneGroup:insert(btn_returnToMenu)

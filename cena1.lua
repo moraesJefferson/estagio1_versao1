@@ -78,7 +78,7 @@ local player, waiting, castelo,textArrow
 local castleLife,healthBar,damageBar,nameBar,lifeBar,myText,life,circle
 local enemy = {} -- table to hold enemy objects
 local enemyCounter = 0 -- number of enemies sent
-local enemySendSpeed = 600 -- how often to send the enemies
+local enemySendSpeed = 200 -- how often to send the enemies
 local enemyTravelSpeed = 10000 -- how fast enemies travel across the scree
 local enemyIncrementSpeed = 1.5 -- how much to increase the enemy speed
 local enemyMaxSendSpeed = 20 -- max send speed, if this is not set, the enemies could just be one big flood 
@@ -213,13 +213,13 @@ function scene:create( event )
     textScore = display.newText( "SCORE  "..tostring(user.xp), _CX-300, _CY * 0.15, native.newFont( "Augusta"), 110 )
     textScore:setFillColor( 255, 255, 255 )
 
-    for i=1,1 do 
+    for i=1,2,1 do 
         lane[i] = display.newImageRect(sceneGroup, "image/cenarios/road.png", 3500, 100)
         lane[i].x = _CX * 0.775
         if(i==1) then
-            lane[i].y = _B * 0.884
-    -- else
-        -- lane[i].y = _B - 150
+            lane[i].y = _B * 0.85
+        else
+            lane[i].y = _B - 190
         end
         lane[i].id = i
     end 
@@ -246,7 +246,7 @@ function scene:create( event )
     castelo.isVisible = true;
 
     player = display.newSprite(playerSheet, playerSequenceData)     
-    player.x = _CX / 0.37
+    player.x = _CX / 0.4
     player.y = _CY / 0.82
     player.force = 0
     player.id = "player_shoot"
@@ -348,12 +348,15 @@ function scene:create( event )
         timeCounter = timeCounter + 1
         if((timeCounter%enemySendSpeed) == 0) then 
             enemyCounter = enemyCounter + 1
+            enemySendSpeed = 1800
             --enemySendSpeed = enemySendSpeed - enemyIncrementSpeed
             if(enemySendSpeed <= enemyMaxSendSpeed) then 
                 enemySendSpeed = enemyMaxSendSpeed
-            end
-
+            end 
             temp = math.random(1,3)
+
+            temp_lane = math.random(1,2)
+
             if(temp == 1) then 
                 enemy[enemyCounter] = display.newSprite(orcSheet1, orcSequenceData)
             elseif(temp == 2) then 
@@ -363,7 +366,7 @@ function scene:create( event )
             end
 
             enemy[enemyCounter].x = _L - 50
-            enemy[enemyCounter].y = lane[1].y-75
+            enemy[enemyCounter].y = lane[temp_lane].y-75
             enemy[enemyCounter].id = "enemy"
             enemy[enemyCounter].name = "enemy"..temp
             enemy[enemyCounter].xScale = 3
@@ -373,13 +376,14 @@ function scene:create( event )
             sceneGroup:insert(enemy[enemyCounter])
 
             transition.to(enemy[enemyCounter], {x=_R+50, time=enemyTravelSpeed, onComplete=function(self) 
-                 if(self~=nil) then 
+                if(self~=nil) then 
                     display.remove(self);
                 end 
             end})
 
             enemy[enemyCounter]:setSequence("run")
             enemy[enemyCounter]:play()
+
         end
     end
 
@@ -486,13 +490,25 @@ function scene:create( event )
             if(obj1 ~= nil and obj1.id == "enemy") then
                 castleHit(event.object1.x+80, event.object1.y)
                 enemyHit(event.object1.x, event.object1.y)
-                castleLife(200)
+                if(obj1.name == "enemy1") then
+                    castleLife(user.orc1Damage)
+                elseif(obj1.name == "enemy2") then
+                    castleLife(user.orc1Damage)
+                else
+                    castleLife(user.orc3Damage)
+                end
                 display.remove(obj1)
             end
             if(obj2 ~= nil and obj2.id == "enemy") then
                 castleHit(event.object2.x+80, event.object2.y)
                 enemyHit(event.object2.x, event.object2.y)
-                castleLife(200)
+                if(obj2.name == "enemy1") then
+                    castleLife(user.orc1Damage)
+                elseif(obj2.name == "enemy2") then
+                    castleLife(user.orc1Damage)
+                else
+                    castleLife(user.orc3Damage)
+                end
                 display.remove(obj2)
             end
         end
@@ -504,14 +520,20 @@ function scene:create( event )
         end
 
         if((event.object1.id == "bullet" and event.object2.id == "enemy") or (event.object1.id == "enemy" and event.object2.id == "bullet")) then 
+            enemySendSpeed = 5
+            timeCounter = 1
             removeOnEnemyHit(event.object1, event.object2)
         elseif(event.object1.id == "enemy" and event.object2.id == "castelo") then 
+            enemySendSpeed = 5
+            timeCounter = 1
             evento = event.object1
             enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
             transition.cancel()
             enemy[enemyCounter]:setSequence("attack")
             enemy[enemyCounter]:play()
-        elseif(event.object1.id == "castelo" and event.object2.id == "enemy") then 
+        elseif(event.object1.id == "castelo" and event.object2.id == "enemy") then
+            enemySendSpeed = 5
+            timeCounter = 1 
             evento = event.object2
             enemy[enemyCounter]:addEventListener( "sprite", spriteListenerEnemy )
             transition.cancel()
@@ -520,9 +542,7 @@ function scene:create( event )
         end
 
     end
-
-
-    
+ 
     local function enterFrame( )
         forceMultiplier = forceMultiplier * perFrameDelta
         if(forceMultiplier >=1 and forceMultiplier <=1.25) then
@@ -582,6 +602,7 @@ function scene:create( event )
             bullets[bulletCounter].isSensor = true
             local vx, vy = (evento.x-evento.xStart)*-1, (evento.y-evento.yStart)*-1
             bullets[bulletCounter].rotation = (math.atan2(vy*-1, vx *-1) * 180 / math.pi)
+            bullets[bulletCounter].isFixedRotation = true
             bullets[bulletCounter]:setLinearVelocity( vx * forceMultiplier ,vy * forceMultiplier )
             bullets[bulletCounter].angularVelocity = -40
             bullets[bulletCounter].gravityScale = 2
